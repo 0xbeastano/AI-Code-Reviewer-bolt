@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import CodeReview from './pages/CodeReview';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import TestDashboard from './pages/TestDashboard';
 import { AuthPage } from './components/Auth/AuthPage';
 import { AuthCallback } from './pages/AuthCallback';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
@@ -48,6 +49,9 @@ function App() {
                         } 
                       />
                       <Route path="/auth/callback" element={<AuthCallback />} />
+                      
+                      {/* Test Dashboard - Public for testing */}
+                      <Route path="/test" element={<TestDashboard />} />
                       
                       {/* Protected Routes */}
                       <Route path="/" element={
