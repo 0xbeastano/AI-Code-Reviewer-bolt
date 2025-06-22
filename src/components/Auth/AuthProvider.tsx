@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { authService, AuthSession, User } from '../../lib/auth';
-import { supabase } from '../../lib/auth';
+import { authService, AuthSession, User, supabase } from '../../lib/auth';
 
 interface AuthContextType {
   session: AuthSession | null;
   user: User | null;
   loading: boolean;
+  isDemoMode: boolean;
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: string | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ user: User | null; error: string | null }>;
   signInWithGitHub: () => Promise<{ url?: string; error?: string }>;
@@ -33,6 +33,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const isDemoMode = authService.isDemoMode();
 
   useEffect(() => {
     // Get initial session
@@ -44,24 +45,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, supabaseSession) => {
-        if (event === 'SIGNED_IN' && supabaseSession) {
-          const authSession = await (authService as any).createAuthSession(supabaseSession);
-          setSession(authSession);
-        } else if (event === 'SIGNED_OUT') {
-          setSession(null);
-        } else if (event === 'TOKEN_REFRESHED' && supabaseSession) {
-          const authSession = await (authService as any).createAuthSession(supabaseSession);
-          setSession(authSession);
+    // Listen for auth changes (only if Supabase is configured)
+    if (supabase && !isDemoMode) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, supabaseSession) => {
+          if (event === 'SIGNED_IN' && supabaseSession) {
+            const authSession = await (authService as any).createAuthSession(supabaseSession);
+            setSession(authSession);
+          } else if (event === 'SIGNED_OUT') {
+            setSession(null);
+          } else if (event === 'TOKEN_REFRESHED' && supabaseSession) {
+            const authSession = await (authService as any).createAuthSession(supabaseSession);
+            setSession(authSession);
+          }
+          setLoading(false);
         }
-        setLoading(false);
-      }
-    );
+      );
 
-    return () => subscription.unsubscribe();
-  }, []);
+      return () => subscription.unsubscribe();
+    }
+  }, [isDemoMode]);
 
   const signIn = async (email: string, password: string) => {
     const result = await authService.signInWithEmail(email, password);
@@ -72,15 +75,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    return await authService.signUpWithEmail(email, password, name);
+    const result = await authService.signUpWithEmail(email, password, name);
+    if (result.user) {
+      setSession(authService.getCurrentSession());
+    }
+    return result;
   };
 
   const signInWithGitHub = async () => {
-    return await authService.signInWithGitHub();
+    const result = await authService.signInWithGitHub();
+    if (isDemoMode && !result.error) {
+      // In demo mode, update session immediately
+      setSession(authService.getCurrentSession());
+    }
+    return result;
   };
 
   const signInWithGoogle = async () => {
-    return await authService.signInWithGoogle();
+    const result = await authService.signInWithGoogle();
+    if (isDemoMode && !result.error) {
+      // In demo mode, update session immediately
+      setSession(authService.getCurrentSession());
+    }
+    return result;
   };
 
   const signOut = async () => {
@@ -105,6 +122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     session,
     user: session?.user || null,
     loading,
+    isDemoMode,
     signIn,
     signUp,
     signInWithGitHub,

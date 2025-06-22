@@ -2,11 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 import { Octokit } from '@octokit/rest';
 import { createOAuthAppAuth } from '@octokit/auth-oauth-app';
 
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// Supabase configuration with fallback
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Check if Supabase is properly configured
+const isSupabaseConfigured = supabaseUrl && 
+  supabaseAnonKey && 
+  supabaseUrl !== 'https://your-project.supabase.co' &&
+  supabaseAnonKey !== 'your-anon-key';
+
+export const supabase = isSupabaseConfigured 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // GitHub OAuth configuration
 export const githubOAuthConfig = {
@@ -28,7 +36,7 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
-  provider: 'email' | 'github' | 'google';
+  provider: 'email' | 'github' | 'google' | 'demo';
   githubToken?: string;
   githubUsername?: string;
   emailVerified: boolean;
@@ -46,6 +54,7 @@ export interface AuthSession {
 export class AuthService {
   private static instance: AuthService;
   private session: AuthSession | null = null;
+  private demoMode: boolean = false;
 
   static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -55,13 +64,29 @@ export class AuthService {
   }
 
   constructor() {
+    this.demoMode = !isSupabaseConfigured;
     this.initializeSession();
   }
 
   private async initializeSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      this.session = await this.createAuthSession(session);
+    if (this.demoMode) {
+      // In demo mode, check localStorage for demo session
+      const demoSession = localStorage.getItem('demo_session');
+      if (demoSession) {
+        try {
+          this.session = JSON.parse(demoSession);
+        } catch (error) {
+          localStorage.removeItem('demo_session');
+        }
+      }
+      return;
+    }
+
+    if (supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        this.session = await this.createAuthSession(session);
+      }
     }
   }
 
@@ -86,8 +111,38 @@ export class AuthService {
     };
   }
 
+  private createDemoSession(email: string, name: string, provider: 'email' | 'github' | 'google' = 'email'): AuthSession {
+    const session: AuthSession = {
+      user: {
+        id: `demo-${Date.now()}`,
+        email,
+        name,
+        provider,
+        emailVerified: true,
+        createdAt: new Date(),
+        lastLoginAt: new Date()
+      },
+      accessToken: `demo-token-${Date.now()}`,
+      refreshToken: `demo-refresh-${Date.now()}`,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    };
+
+    localStorage.setItem('demo_session', JSON.stringify(session));
+    return session;
+  }
+
   // Email/Password Authentication
   async signUpWithEmail(email: string, password: string, name: string): Promise<{ user: User | null; error: string | null }> {
+    if (this.demoMode) {
+      // Demo mode - simulate successful signup
+      this.session = this.createDemoSession(email, name, 'email');
+      return { user: this.session.user, error: null };
+    }
+
+    if (!supabase) {
+      return { user: null, error: 'Authentication service not configured' };
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -117,6 +172,16 @@ export class AuthService {
   }
 
   async signInWithEmail(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
+    if (this.demoMode) {
+      // Demo mode - simulate successful signin
+      this.session = this.createDemoSession(email, email.split('@')[0], 'email');
+      return { user: this.session.user, error: null };
+    }
+
+    if (!supabase) {
+      return { user: null, error: 'Authentication service not configured' };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -136,6 +201,16 @@ export class AuthService {
 
   // OAuth Authentication
   async signInWithGitHub(): Promise<{ url?: string; error?: string }> {
+    if (this.demoMode) {
+      // Demo mode - simulate GitHub OAuth
+      this.session = this.createDemoSession('demo@github.com', 'GitHub Demo User', 'github');
+      return { url: undefined }; // No redirect needed in demo mode
+    }
+
+    if (!supabase) {
+      return { error: 'Authentication service not configured' };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
@@ -156,6 +231,16 @@ export class AuthService {
   }
 
   async signInWithGoogle(): Promise<{ url?: string; error?: string }> {
+    if (this.demoMode) {
+      // Demo mode - simulate Google OAuth
+      this.session = this.createDemoSession('demo@google.com', 'Google Demo User', 'google');
+      return { url: undefined }; // No redirect needed in demo mode
+    }
+
+    if (!supabase) {
+      return { error: 'Authentication service not configured' };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -177,11 +262,28 @@ export class AuthService {
 
   // Session Management
   async signOut(): Promise<void> {
-    await supabase.auth.signOut();
+    if (this.demoMode) {
+      localStorage.removeItem('demo_session');
+      this.session = null;
+      return;
+    }
+
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     this.session = null;
   }
 
   async refreshSession(): Promise<{ session: AuthSession | null; error: string | null }> {
+    if (this.demoMode) {
+      // In demo mode, just return current session
+      return { session: this.session, error: null };
+    }
+
+    if (!supabase) {
+      return { session: null, error: 'Authentication service not configured' };
+    }
+
     try {
       const { data, error } = await supabase.auth.refreshSession();
       
@@ -212,8 +314,21 @@ export class AuthService {
     return this.session !== null && new Date() < this.session.expiresAt;
   }
 
+  isDemoMode(): boolean {
+    return this.demoMode;
+  }
+
   // Password Reset
   async resetPassword(email: string): Promise<{ error: string | null }> {
+    if (this.demoMode) {
+      // Demo mode - simulate password reset
+      return { error: null };
+    }
+
+    if (!supabase) {
+      return { error: 'Authentication service not configured' };
+    }
+
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`
@@ -230,6 +345,15 @@ export class AuthService {
   }
 
   async updatePassword(newPassword: string): Promise<{ error: string | null }> {
+    if (this.demoMode) {
+      // Demo mode - simulate password update
+      return { error: null };
+    }
+
+    if (!supabase) {
+      return { error: 'Authentication service not configured' };
+    }
+
     try {
       const { error } = await supabase.auth.updateUser({
         password: newPassword
@@ -247,6 +371,35 @@ export class AuthService {
 
   // GitHub Integration
   async getGitHubRepositories(): Promise<{ repositories: any[]; error: string | null }> {
+    if (this.demoMode) {
+      // Return mock repositories for demo
+      const mockRepos = [
+        {
+          id: 1,
+          name: 'my-awesome-project',
+          full_name: 'demo/my-awesome-project',
+          description: 'A demo project for AI code review',
+          private: false,
+          language: 'TypeScript',
+          stargazers_count: 42,
+          updated_at: new Date().toISOString(),
+          html_url: 'https://github.com/demo/my-awesome-project'
+        },
+        {
+          id: 2,
+          name: 'react-dashboard',
+          full_name: 'demo/react-dashboard',
+          description: 'Modern React dashboard with TypeScript',
+          private: true,
+          language: 'JavaScript',
+          stargazers_count: 15,
+          updated_at: new Date(Date.now() - 86400000).toISOString(),
+          html_url: 'https://github.com/demo/react-dashboard'
+        }
+      ];
+      return { repositories: mockRepos, error: null };
+    }
+
     if (!this.session?.user.githubToken) {
       return { repositories: [], error: 'GitHub token not available. Please reconnect your GitHub account.' };
     }
@@ -268,6 +421,10 @@ export class AuthService {
   }
 
   async getRepositoryContent(owner: string, repo: string, path: string = ''): Promise<{ content: any; error: string | null }> {
+    if (this.demoMode) {
+      return { content: null, error: 'Demo mode - repository content not available' };
+    }
+
     if (!this.session?.user.githubToken) {
       return { content: null, error: 'GitHub token not available.' };
     }

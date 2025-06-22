@@ -2,14 +2,28 @@ import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/auth';
+import { useAuth } from '../components/Auth/AuthProvider';
 import toast from 'react-hot-toast';
 
 export const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { isDemoMode } = useAuth();
 
   useEffect(() => {
     const handleAuthCallback = async () => {
+      // In demo mode, just redirect to dashboard
+      if (isDemoMode) {
+        navigate('/');
+        return;
+      }
+
+      if (!supabase) {
+        toast.error('Authentication service not configured');
+        navigate('/auth');
+        return;
+      }
+
       try {
         const { data, error } = await supabase.auth.getSession();
         
@@ -49,7 +63,7 @@ export const AuthCallback: React.FC = () => {
     }
 
     handleAuthCallback();
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, isDemoMode]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
