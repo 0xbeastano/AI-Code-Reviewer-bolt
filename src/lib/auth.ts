@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Octokit } from '@octokit/rest';
 import { createOAuthAppAuth } from '@octokit/auth-oauth-app';
 
-// Supabase configuration with fallback
+// Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -66,6 +66,13 @@ export class AuthService {
   constructor() {
     this.demoMode = !isSupabaseConfigured;
     this.initializeSession();
+    
+    // Log configuration status
+    if (this.demoMode) {
+      console.log('🔧 Running in Demo Mode - Supabase not configured');
+    } else {
+      console.log('🚀 Production Mode Enabled - Connected to Supabase');
+    }
   }
 
   private async initializeSession() {
