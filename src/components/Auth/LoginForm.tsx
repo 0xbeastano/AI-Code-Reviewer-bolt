@@ -58,6 +58,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
       if (error) {
         toast.error(error);
       } else if (url) {
+        // Store current location for redirect after auth
+        sessionStorage.setItem('auth_return_to', window.location.pathname);
         window.location.href = url;
       } else if (isDemoMode) {
         // In demo mode, the session is created immediately
@@ -78,7 +80,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
       if (error) {
         toast.error(error);
       } else if (url) {
+        // Store current location for redirect after auth
+        sessionStorage.setItem('auth_return_to', window.location.pathname);
         window.location.href = url;
+      } else if (isDemoMode) {
+        // In demo mode, the session is created immediately
+        toast.success('Google authentication successful!');
       }
     } catch (error) {
       toast.error('Failed to sign in with Google');

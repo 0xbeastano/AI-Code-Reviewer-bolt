@@ -12,13 +12,26 @@ export const AuthCallback: React.FC = () => {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      // Check for GitHub OAuth callback in demo mode
+      // Check for OAuth callback in demo mode
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       
       if (isDemoMode && code && state) {
         try {
-          const { user, error } = await authService.handleGitHubCallback(code, state);
+          // Determine provider based on state or other parameters
+          const githubState = localStorage.getItem('github_oauth_state');
+          const googleState = localStorage.getItem('google_oauth_state');
+          
+          let result;
+          if (state === githubState) {
+            result = await authService.handleGitHubCallback(code, state);
+          } else if (state === googleState) {
+            result = await authService.handleGoogleCallback(code, state);
+          } else {
+            throw new Error('Invalid OAuth state');
+          }
+          
+          const { user, error } = result;
           
           if (error) {
             toast.error(error);
@@ -27,13 +40,18 @@ export const AuthCallback: React.FC = () => {
           }
 
           if (user) {
-            toast.success(`Welcome ${user.name}! GitHub account connected successfully.`);
-            navigate('/');
+            const providerName = user.provider === 'github' ? 'GitHub' : 'Google';
+            toast.success(`Welcome ${user.name}! ${providerName} account connected successfully.`);
+            
+            // Redirect to the intended page or dashboard
+            const returnTo = sessionStorage.getItem('auth_return_to') || '/';
+            sessionStorage.removeItem('auth_return_to');
+            navigate(returnTo);
             return;
           }
         } catch (error) {
-          console.error('GitHub OAuth callback error:', error);
-          toast.error('Failed to complete GitHub authentication');
+          console.error('OAuth callback error:', error);
+          toast.error('Failed to complete authentication');
           navigate('/auth');
           return;
         }

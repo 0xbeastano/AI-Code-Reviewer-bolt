@@ -27,6 +27,7 @@ export const githubOAuthConfig = {
 // Google OAuth configuration
 export const googleOAuthConfig = {
   clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+  clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
   redirectUri: `${window.location.origin}/auth/callback`,
   scopes: ['openid', 'email', 'profile']
 };
@@ -39,6 +40,7 @@ export interface User {
   provider: 'email' | 'github' | 'google' | 'demo';
   githubToken?: string;
   githubUsername?: string;
+  googleId?: string;
   emailVerified: boolean;
   createdAt: Date;
   lastLoginAt: Date;
@@ -71,6 +73,7 @@ export class AuthService {
     if (this.demoMode) {
       console.log('🔧 Running in Demo Mode - Supabase not configured');
       console.log('🔗 GitHub OAuth configured:', !!githubOAuthConfig.clientId);
+      console.log('🔗 Google OAuth configured:', !!googleOAuthConfig.clientId);
     } else {
       console.log('🚀 Production Mode Enabled - Connected to Supabase');
     }
@@ -109,6 +112,7 @@ export class AuthService {
         provider: user.app_metadata?.provider || 'email',
         githubToken: user.user_metadata?.provider_token,
         githubUsername: user.user_metadata?.user_name,
+        googleId: user.user_metadata?.sub,
         emailVerified: user.email_confirmed_at !== null,
         createdAt: new Date(user.created_at),
         lastLoginAt: new Date(user.last_sign_in_at)
@@ -119,7 +123,7 @@ export class AuthService {
     };
   }
 
-  private createDemoSession(email: string, name: string, provider: 'email' | 'github' | 'google' = 'email'): AuthSession {
+  private createDemoSession(email: string, name: string, provider: 'email' | 'github' | 'google' = 'email', additionalData?: any): AuthSession {
     const session: AuthSession = {
       user: {
         id: `demo-${Date.now()}`,
@@ -128,7 +132,8 @@ export class AuthService {
         provider,
         emailVerified: true,
         createdAt: new Date(),
-        lastLoginAt: new Date()
+        lastLoginAt: new Date(),
+        ...additionalData
       },
       accessToken: `demo-token-${Date.now()}`,
       refreshToken: `demo-refresh-${Date.now()}`,
@@ -253,11 +258,29 @@ export class AuthService {
     }
   }
 
+  // Google OAuth Authentication
   async signInWithGoogle(): Promise<{ url?: string; error?: string }> {
     if (this.demoMode) {
-      // Demo mode - simulate Google OAuth
-      this.session = this.createDemoSession('demo@google.com', 'Google Demo User', 'google');
-      return { url: undefined }; // No redirect needed in demo mode
+      // In demo mode, use Google OAuth directly
+      if (!googleOAuthConfig.clientId) {
+        return { error: 'Google OAuth not configured' };
+      }
+
+      const state = Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('google_oauth_state', state);
+      
+      const params = new URLSearchParams({
+        client_id: googleOAuthConfig.clientId,
+        redirect_uri: googleOAuthConfig.redirectUri,
+        scope: googleOAuthConfig.scopes.join(' '),
+        state: state,
+        response_type: 'code',
+        access_type: 'offline',
+        prompt: 'consent'
+      });
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+      return { url: authUrl };
     }
 
     if (!supabase) {
@@ -362,6 +385,80 @@ export class AuthService {
 
     } catch (error) {
       return { user: null, error: 'Failed to complete GitHub authentication' };
+    }
+  }
+
+  // Handle Google OAuth callback (for demo mode)
+  async handleGoogleCallback(code: string, state: string): Promise<{ user: User | null; error: string | null }> {
+    if (!this.demoMode) {
+      return { user: null, error: 'OAuth callback should be handled by Supabase in production mode' };
+    }
+
+    const savedState = localStorage.getItem('google_oauth_state');
+    if (state !== savedState) {
+      return { user: null, error: 'Invalid OAuth state parameter' };
+    }
+
+    localStorage.removeItem('google_oauth_state');
+
+    try {
+      // Exchange code for access token
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: googleOAuthConfig.clientId,
+          client_secret: googleOAuthConfig.clientSecret,
+          code: code,
+          grant_type: 'authorization_code',
+          redirect_uri: googleOAuthConfig.redirectUri,
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+      
+      if (tokenData.error) {
+        return { user: null, error: tokenData.error_description || 'Failed to exchange code for token' };
+      }
+
+      // Get user info from Google
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+        },
+      });
+
+      const userData = await userResponse.json();
+
+      if (userData.error) {
+        return { user: null, error: 'Failed to fetch user information from Google' };
+      }
+
+      // Create session with Google data
+      this.session = {
+        user: {
+          id: `google-${userData.id}`,
+          email: userData.email,
+          name: userData.name,
+          avatar: userData.picture,
+          provider: 'google',
+          googleId: userData.id,
+          emailVerified: userData.verified_email,
+          createdAt: new Date(),
+          lastLoginAt: new Date()
+        },
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token || '',
+        expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000))
+      };
+
+      localStorage.setItem('demo_session', JSON.stringify(this.session));
+      return { user: this.session.user, error: null };
+
+    } catch (error) {
+      return { user: null, error: 'Failed to complete Google authentication' };
     }
   }
 

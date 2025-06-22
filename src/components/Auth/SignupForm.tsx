@@ -26,7 +26,7 @@ interface SignupFormProps {
 }
 
 export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
-  const { signUp, signInWithGitHub, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGitHub, signInWithGoogle, isDemoMode } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -74,7 +74,12 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       if (error) {
         toast.error(error);
       } else if (url) {
+        // Store current location for redirect after auth
+        sessionStorage.setItem('auth_return_to', window.location.pathname);
         window.location.href = url;
+      } else if (isDemoMode) {
+        // In demo mode, the session is created immediately
+        toast.success('GitHub authentication successful!');
       }
     } catch (error) {
       toast.error('Failed to sign up with GitHub');
@@ -91,7 +96,12 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       if (error) {
         toast.error(error);
       } else if (url) {
+        // Store current location for redirect after auth
+        sessionStorage.setItem('auth_return_to', window.location.pathname);
         window.location.href = url;
+      } else if (isDemoMode) {
+        // In demo mode, the session is created immediately
+        toast.success('Google authentication successful!');
       }
     } catch (error) {
       toast.error('Failed to sign up with Google');
