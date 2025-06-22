@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Github, GitBranch, Lock, Users, Star, ExternalLink, RefreshCw } from 'lucide-react';
+import { Github, GitBranch, Lock, Users, Star, ExternalLink, RefreshCw, CheckCircle } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { authService } from '../../lib/auth';
 import toast from 'react-hot-toast';
@@ -18,7 +18,7 @@ interface Repository {
 }
 
 export const GitHubIntegration: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isDemoMode } = useAuth();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRepos, setSelectedRepos] = useState<Set<number>>(new Set());
@@ -40,6 +40,7 @@ export const GitHubIntegration: React.FC = () => {
         toast.error(error);
       } else {
         setRepositories(repos);
+        toast.success(`✅ Loaded ${repos.length} repositories from GitHub`);
       }
     } catch (error) {
       toast.error('Failed to fetch repositories');
@@ -55,7 +56,13 @@ export const GitHubIntegration: React.FC = () => {
       if (error) {
         toast.error(error);
       } else if (url) {
+        // Store current location for redirect after auth
+        sessionStorage.setItem('auth_return_to', window.location.pathname);
         window.location.href = url;
+      } else if (isDemoMode) {
+        // In demo mode, the session is created immediately
+        toast.success('GitHub connected successfully!');
+        fetchRepositories();
       }
     } catch (error) {
       toast.error('Failed to connect GitHub');
@@ -78,8 +85,9 @@ export const GitHubIntegration: React.FC = () => {
       return;
     }
     
-    toast.success(`Starting analysis for ${selectedRepos.size} repositories`);
+    toast.success(`🚀 Starting analysis for ${selectedRepos.size} repositories`);
     // Navigate to analysis page with selected repositories
+    window.location.href = '/review';
   };
 
   if (!isGitHubConnected) {
@@ -135,14 +143,14 @@ export const GitHubIntegration: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
-              <Github className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <h3 className="font-medium text-green-800 dark:text-green-200">
                 GitHub Connected
               </h3>
               <p className="text-sm text-green-600 dark:text-green-300">
-                @{user?.githubUsername} • {repositories.length} repositories available
+                @{user?.githubUsername || user?.name} • {repositories.length} repositories available
               </p>
             </div>
           </div>

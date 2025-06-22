@@ -20,14 +20,14 @@ export const supabase = isSupabaseConfigured
 export const githubOAuthConfig = {
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
   clientSecret: import.meta.env.VITE_GITHUB_CLIENT_SECRET || '',
-  redirectUri: `${window.location.origin}/auth/callback/github`,
+  redirectUri: `${window.location.origin}/auth/callback`,
   scopes: ['repo', 'user:email', 'read:user']
 };
 
 // Google OAuth configuration
 export const googleOAuthConfig = {
   clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-  redirectUri: `${window.location.origin}/auth/callback/google`,
+  redirectUri: `${window.location.origin}/auth/callback`,
   scopes: ['openid', 'email', 'profile']
 };
 
@@ -70,6 +70,7 @@ export class AuthService {
     // Log configuration status
     if (this.demoMode) {
       console.log('🔧 Running in Demo Mode - Supabase not configured');
+      console.log('🔗 GitHub OAuth configured:', !!githubOAuthConfig.clientId);
     } else {
       console.log('🚀 Production Mode Enabled - Connected to Supabase');
     }
@@ -206,12 +207,27 @@ export class AuthService {
     }
   }
 
-  // OAuth Authentication
+  // GitHub OAuth Authentication
   async signInWithGitHub(): Promise<{ url?: string; error?: string }> {
     if (this.demoMode) {
-      // Demo mode - simulate GitHub OAuth
-      this.session = this.createDemoSession('demo@github.com', 'GitHub Demo User', 'github');
-      return { url: undefined }; // No redirect needed in demo mode
+      // In demo mode, use GitHub OAuth directly
+      if (!githubOAuthConfig.clientId) {
+        return { error: 'GitHub OAuth not configured' };
+      }
+
+      const state = Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('github_oauth_state', state);
+      
+      const params = new URLSearchParams({
+        client_id: githubOAuthConfig.clientId,
+        redirect_uri: githubOAuthConfig.redirectUri,
+        scope: githubOAuthConfig.scopes.join(' '),
+        state: state,
+        allow_signup: 'true'
+      });
+
+      const authUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
+      return { url: authUrl };
     }
 
     if (!supabase) {
@@ -264,6 +280,88 @@ export class AuthService {
       return { url: data.url };
     } catch (error) {
       return { error: 'Failed to initiate Google authentication.' };
+    }
+  }
+
+  // Handle GitHub OAuth callback (for demo mode)
+  async handleGitHubCallback(code: string, state: string): Promise<{ user: User | null; error: string | null }> {
+    if (!this.demoMode) {
+      return { user: null, error: 'OAuth callback should be handled by Supabase in production mode' };
+    }
+
+    const savedState = localStorage.getItem('github_oauth_state');
+    if (state !== savedState) {
+      return { user: null, error: 'Invalid OAuth state parameter' };
+    }
+
+    localStorage.removeItem('github_oauth_state');
+
+    try {
+      // Exchange code for access token
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: githubOAuthConfig.clientId,
+          client_secret: githubOAuthConfig.clientSecret,
+          code: code,
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+      
+      if (tokenData.error) {
+        return { user: null, error: tokenData.error_description || 'Failed to exchange code for token' };
+      }
+
+      // Get user info from GitHub
+      const userResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      });
+
+      const userData = await userResponse.json();
+
+      // Get user email
+      const emailResponse = await fetch('https://api.github.com/user/emails', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      });
+
+      const emailData = await emailResponse.json();
+      const primaryEmail = emailData.find((email: any) => email.primary)?.email || userData.email;
+
+      // Create session with GitHub data
+      this.session = {
+        user: {
+          id: `github-${userData.id}`,
+          email: primaryEmail,
+          name: userData.name || userData.login,
+          avatar: userData.avatar_url,
+          provider: 'github',
+          githubToken: tokenData.access_token,
+          githubUsername: userData.login,
+          emailVerified: true,
+          createdAt: new Date(),
+          lastLoginAt: new Date()
+        },
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token || '',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      };
+
+      localStorage.setItem('demo_session', JSON.stringify(this.session));
+      return { user: this.session.user, error: null };
+
+    } catch (error) {
+      return { user: null, error: 'Failed to complete GitHub authentication' };
     }
   }
 

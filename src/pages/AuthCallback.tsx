@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/auth';
+import { supabase, authService } from '../lib/auth';
 import { useAuth } from '../components/Auth/AuthProvider';
 import toast from 'react-hot-toast';
 
@@ -12,55 +12,77 @@ export const AuthCallback: React.FC = () => {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      // In demo mode, just redirect to dashboard
-      if (isDemoMode) {
-        navigate('/');
-        return;
-      }
+      // Check for GitHub OAuth callback in demo mode
+      const code = searchParams.get('code');
+      const state = searchParams.get('state');
+      
+      if (isDemoMode && code && state) {
+        try {
+          const { user, error } = await authService.handleGitHubCallback(code, state);
+          
+          if (error) {
+            toast.error(error);
+            navigate('/auth');
+            return;
+          }
 
-      if (!supabase) {
-        toast.error('Authentication service not configured');
-        navigate('/auth');
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Auth callback error:', error);
-          toast.error('Authentication failed. Please try again.');
+          if (user) {
+            toast.success(`Welcome ${user.name}! GitHub account connected successfully.`);
+            navigate('/');
+            return;
+          }
+        } catch (error) {
+          console.error('GitHub OAuth callback error:', error);
+          toast.error('Failed to complete GitHub authentication');
           navigate('/auth');
           return;
         }
+      }
 
-        if (data.session) {
-          toast.success('Successfully signed in!');
+      // Handle Supabase OAuth callback in production mode
+      if (!isDemoMode && supabase) {
+        try {
+          const { data, error } = await supabase.auth.getSession();
           
-          // Redirect to the intended page or dashboard
-          const returnTo = sessionStorage.getItem('auth_return_to') || '/';
-          sessionStorage.removeItem('auth_return_to');
-          navigate(returnTo);
-        } else {
+          if (error) {
+            console.error('Auth callback error:', error);
+            toast.error('Authentication failed. Please try again.');
+            navigate('/auth');
+            return;
+          }
+
+          if (data.session) {
+            toast.success('Successfully signed in!');
+            
+            // Redirect to the intended page or dashboard
+            const returnTo = sessionStorage.getItem('auth_return_to') || '/';
+            sessionStorage.removeItem('auth_return_to');
+            navigate(returnTo);
+          } else {
+            navigate('/auth');
+          }
+        } catch (error) {
+          console.error('Unexpected error during auth callback:', error);
+          toast.error('An unexpected error occurred');
           navigate('/auth');
         }
-      } catch (error) {
-        console.error('Unexpected error during auth callback:', error);
-        toast.error('An unexpected error occurred');
-        navigate('/auth');
+        return;
       }
-    };
 
-    // Check for error in URL params
-    const error = searchParams.get('error');
-    const errorDescription = searchParams.get('error_description');
-    
-    if (error) {
-      console.error('OAuth error:', error, errorDescription);
-      toast.error(errorDescription || 'Authentication failed');
+      // Check for error in URL params
+      const error = searchParams.get('error');
+      const errorDescription = searchParams.get('error_description');
+      
+      if (error) {
+        console.error('OAuth error:', error, errorDescription);
+        toast.error(errorDescription || 'Authentication failed');
+        navigate('/auth');
+        return;
+      }
+
+      // If no specific callback handling is needed, redirect to auth
       navigate('/auth');
-      return;
-    }
+    };
 
     handleAuthCallback();
   }, [navigate, searchParams, isDemoMode]);

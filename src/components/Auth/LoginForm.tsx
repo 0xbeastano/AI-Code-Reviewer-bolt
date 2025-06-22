@@ -20,7 +20,7 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitchToReset }) => {
-  const { signIn, signInWithGitHub, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGitHub, signInWithGoogle, isDemoMode } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
@@ -59,6 +59,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
         toast.error(error);
       } else if (url) {
         window.location.href = url;
+      } else if (isDemoMode) {
+        // In demo mode, the session is created immediately
+        toast.success('GitHub authentication successful!');
       }
     } catch (error) {
       toast.error('Failed to sign in with GitHub');
