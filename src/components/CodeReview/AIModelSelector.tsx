@@ -349,7 +349,7 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({
           💡 Model Selection Tips
         </h4>
         <ul className="text-xs text-blue-600 dark:text-blue-300 space-y-1">
-          <li>• <strong>Large codebases (>10MB):</strong> Use Claude 3 Opus for maximum context</li>
+          <li>• <strong>{'Large codebases (>10MB):'}</strong> Use Claude 3 Opus for maximum context</li>
           <li>• <strong>Quick analysis:</strong> GPT-4 Turbo or Claude 3 Haiku for speed</li>
           <li>• <strong>Security reviews:</strong> GPT-4 for highest accuracy</li>
           <li>• <strong>Cost optimization:</strong> Claude 3 Haiku for bulk processing</li>

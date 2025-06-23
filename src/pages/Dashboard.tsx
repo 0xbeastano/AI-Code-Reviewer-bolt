@@ -186,7 +186,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center space-x-6 text-sm text-blue-100">
               <div className="flex items-center">
                 <Clock className="w-4 h-4 mr-1" />
-                <span>< 30 seconds</span>
+                <span>{'< 30 seconds'}</span>
               </div>
               <div className="flex items-center">
                 <Star className="w-4 h-4 mr-1" />
@@ -348,7 +348,7 @@ const Dashboard: React.FC = () => {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Analysis Speed</span>
-              <span className="text-sm font-medium text-gray-900 dark:text-white">< 30 seconds</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">{'< 30 seconds'}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Accuracy Rate</span>
@@ -407,7 +407,6 @@ const Dashboard: React.FC = () => {
         </div>
       </motion.div>
     </div>
-  )
   );
 };
 
