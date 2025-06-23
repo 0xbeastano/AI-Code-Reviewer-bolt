@@ -5,32 +5,20 @@ import {
   BarChart3, 
   Shield, 
   Zap, 
-  GitBranch, 
   Clock, 
   TrendingUp,
-  CheckCircle,
-  Users,
   Brain,
   Upload,
   ArrowRight,
   Star,
   Sparkles,
-  RefreshCw,
-  ChevronRight,
-  AlertTriangle,
-  FileCode
+  RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useQuery } from 'react-query';
 
 // Import components
-import RecentReviews from '../components/Dashboard/RecentReviews';
 import QualityTrends from '../components/Dashboard/QualityTrends';
-import SecurityAlerts from '../components/Dashboard/SecurityAlerts';
-import TeamActivity from '../components/Dashboard/TeamActivity';
-import QuickActions from '../components/Dashboard/QuickActions';
-
-// Import services
 import { codeReviewService } from '../services/codeReviewService';
 
 const Dashboard: React.FC = () => {
@@ -183,13 +171,13 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <GitBranch className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Repositories Reviewed</h3>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Analysis Completed</h3>
                 <AnimatePresence mode="wait">
                   <motion.p 
-                    key={dashboardData?.metrics.repoCount || 'loading'}
+                    key={isLoading ? 'loading' : 'loaded'}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
@@ -198,7 +186,7 @@ const Dashboard: React.FC = () => {
                     {isLoading ? (
                       <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                     ) : (
-                      dashboardData?.metrics.repoCount
+                      dashboardData?.metrics?.repoCount || 0
                     )}
                   </motion.p>
                 </AnimatePresence>
@@ -236,7 +224,7 @@ const Dashboard: React.FC = () => {
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Security Score</h3>
                 <AnimatePresence mode="wait">
                   <motion.div 
-                    key={dashboardData?.metrics.securityScore || 'loading'}
+                    key={isLoading ? 'loading' : 'loaded'}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
@@ -245,7 +233,7 @@ const Dashboard: React.FC = () => {
                     {isLoading ? (
                       <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                     ) : (
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{dashboardData?.metrics.securityScore}%</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{dashboardData?.metrics?.securityScore || 0}%</p>
                     )}
                   </motion.div>
                 </AnimatePresence>
@@ -258,10 +246,10 @@ const Dashboard: React.FC = () => {
           </div>
           
           <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
-            <div className="h-1 bg-green-500 rounded-full" style={{ width: `${dashboardData?.metrics.securityScore || 0}%` }}></div>
+            <div className="h-1 bg-green-500 rounded-full" style={{ width: `${dashboardData?.metrics?.securityScore || 0}%` }}></div>
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            {(dashboardData?.metrics.securityScore || 0) >= 90 ? 'Excellent' : (dashboardData?.metrics.securityScore || 0) >= 80 ? 'Good' : 'Needs improvement'}
+            {(dashboardData?.metrics?.securityScore || 0) >= 90 ? 'Excellent' : (dashboardData?.metrics?.securityScore || 0) >= 80 ? 'Good' : 'Needs improvement'}
           </div>
         </motion.div>
         
@@ -283,7 +271,7 @@ const Dashboard: React.FC = () => {
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Quality Improvement</h3>
                 <AnimatePresence mode="wait">
                   <motion.div 
-                    key={dashboardData?.metrics.qualityGain || 'loading'}
+                    key={isLoading ? 'loading' : 'loaded'}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
@@ -292,7 +280,7 @@ const Dashboard: React.FC = () => {
                     {isLoading ? (
                       <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                     ) : (
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">+{dashboardData?.metrics.qualityGain}%</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">+{dashboardData?.metrics?.qualityGain || 0}%</p>
                     )}
                   </motion.div>
                 </AnimatePresence>
@@ -305,148 +293,26 @@ const Dashboard: React.FC = () => {
           </div>
           
           <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
-            <div className="h-1 bg-purple-500 rounded-full" style={{ width: `${Math.min(100, (dashboardData?.metrics.qualityGain || 0) * 2)}%` }}></div>
+            <div className="h-1 bg-purple-500 rounded-full" style={{ width: `${Math.min(100, (dashboardData?.metrics?.qualityGain || 0) * 2)}%` }}></div>
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            {(dashboardData?.metrics.qualityGain || 0) >= 30 ? 'Exceptional' : (dashboardData?.metrics.qualityGain || 0) >= 20 ? 'Significant' : 'Moderate'} improvement
+            {(dashboardData?.metrics?.qualityGain || 0) >= 30 ? 'Exceptional' : (dashboardData?.metrics?.qualityGain || 0) >= 20 ? 'Significant' : 'Moderate'} improvement
           </div>
         </motion.div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Quality Trends - Dynamic */}
-          {isLoading ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-              <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            </div>
-          ) : (
-            <QualityTrends data={dashboardData?.trends} />
-          )}
-          
-          {/* Recent Reviews - Dynamic */}
-          {isLoading ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <RecentReviews reviews={dashboardData?.reviews || []} />
-          )}
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Quick Actions - Dynamic */}
-          {isLoading ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <QuickActions repositories={dashboardData?.repositories || []} />
-          )}
-          
-          {/* Security Alerts - Dynamic */}
-          {isLoading ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <SecurityAlerts alerts={dashboardData?.securityAlerts || []} />
-          )}
-          
-          {/* Team Activity - Dynamic */}
-          {isLoading ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <TeamActivity activities={dashboardData?.teamActivity || []} />
-          )}
-        </div>
-      </div>
-
-      {/* Recent Projects - Dynamic */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-            <GitBranch className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
-            Recent Projects
-          </h3>
-          <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
-            View all
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
-        </div>
-        
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+        {/* Quality Trends - Dynamic */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-            ))}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {dashboardData?.repositories.map((repo, index) => (
-              <motion.div
-                key={repo.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * index }}
-                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-300 dark:hover:border-primary-600 transition-all cursor-pointer"
-                whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
-              >
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                    <GitBranch className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">{repo.name}</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{repo.language}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>Last scan: Today</span>
-                  <span className={`px-2 py-1 rounded-full ${
-                    repo.isPrivate 
-                      ? 'bg-gray-100 dark:bg-gray-700' 
-                      : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                  }`}>
-                    {repo.isPrivate ? 'Private' : 'Public'}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <QualityTrends data={dashboardData?.trends} />
         )}
-      </motion.div>
+      </div>
     </div>
   );
 };
