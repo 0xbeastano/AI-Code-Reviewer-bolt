@@ -1,6 +1,7 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { motion } from 'framer-motion';
+import { BarChart3, ChevronRight } from 'lucide-react';
 
 interface QualityTrendsProps {
   data?: {
@@ -36,9 +37,18 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
       className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
     >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Quality Trends
-        </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <BarChart3 className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Quality Trends
+            </h3>
+          </div>
+          <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+            View details
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </button>
+        </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           Code quality metrics over time
         </p>
@@ -75,6 +85,7 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
                 strokeWidth={2}
                 dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
                 name="Quality"
+                activeDot={{ r: 6, stroke: '#3B82F6', strokeWidth: 2 }}
               />
               <Line 
                 type="monotone" 
@@ -83,6 +94,7 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
                 strokeWidth={2}
                 dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
                 name="Security"
+                activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
               />
               <Line 
                 type="monotone" 
@@ -91,6 +103,7 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
                 strokeWidth={2}
                 dot={{ fill: '#F59E0B', strokeWidth: 2, r: 4 }}
                 name="Performance"
+                activeDot={{ r: 6, stroke: '#F59E0B', strokeWidth: 2 }}
               />
             </LineChart>
           </ResponsiveContainer>

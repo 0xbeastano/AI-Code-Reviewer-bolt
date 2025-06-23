@@ -1,14 +1,23 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, Plus, Settings, Download, GitBranch, Zap } from 'lucide-react';
-import { Repository } from '../../types/codeReview';
+import { Play, Plus, Settings, Download, GitBranch, Zap, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+interface Repository {
+  id: string;
+  name: string;
+  provider: string;
+  language: string;
+  isPrivate: boolean;
+  lastScan: Date;
+  status: 'active' | 'syncing' | 'error' | 'disconnected';
+}
 
 interface QuickActionsProps {
   repositories: Repository[];
 }
 
-const QuickActions: React.FC<QuickActionsProps> = ({ repositories }) => {
+const QuickActions: React.FC<QuickActionsProps> = ({ repositories = [] }) => {
   const navigate = useNavigate();
 
   const actions = [
@@ -53,9 +62,16 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Quick Actions
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+            <Zap className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
+            Quick Actions
+          </h3>
+          <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+            More
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </button>
+        </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           Common tasks and shortcuts
         </p>
@@ -87,7 +103,8 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories }) => {
 
       {repositories.length > 0 && (
         <div className="p-6 border-t border-gray-200 dark:border-gray-700">
-          <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+          <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+            <GitBranch className="w-4 h-4 text-primary-600 dark:text-primary-400 mr-2" />
             Recent Repositories
           </h4>
           <div className="space-y-2">

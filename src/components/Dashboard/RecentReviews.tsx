@@ -1,14 +1,24 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Clock, CheckCircle, XCircle, AlertCircle, ExternalLink } from 'lucide-react';
-import { CodeReviewResult } from '../../types/codeReview';
+import { Clock, CheckCircle, XCircle, AlertCircle, ExternalLink, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+
+interface CodeReviewResult {
+  id: string;
+  status: 'completed' | 'running' | 'failed';
+  startedAt: Date;
+  progress: number;
+  summary: {
+    issuesFound?: number;
+    qualityScore?: number;
+  };
+}
 
 interface RecentReviewsProps {
   reviews: CodeReviewResult[];
 }
 
-const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews }) => {
+const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -25,9 +35,16 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Recent Reviews
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+            <CheckCircle className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
+            Recent Reviews
+          </h3>
+          <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+            View all
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </button>
+        </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           Latest code review activities
         </p>
@@ -35,7 +52,7 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews }) => {
 
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {reviews.length === 0 ? (
-          <div className="p-6 text-center">
+          <div className="p-8 text-center">
             <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
               No recent reviews found
@@ -76,7 +93,7 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews }) => {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                  {review.status === 'completed' && (
+                  {review.status === 'completed' && review.summary && (
                     <div className="text-right">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {review.summary.issuesFound} issues found
@@ -116,8 +133,9 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews }) => {
 
       {reviews.length > 0 && (
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <button className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
+          <button className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center">
             View all reviews
+            <ChevronRight className="w-4 h-4 ml-1" />
           </button>
         </div>
       )}
