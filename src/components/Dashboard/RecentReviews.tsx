@@ -22,19 +22,6 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews }) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200';
-      case 'failed':
-        return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200';
-      case 'running':
-        return 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200';
-      default:
-        return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200';
-    }
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -72,7 +59,13 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews }) => {
                       Repository Review #{review.id.slice(-6)}
                     </h4>
                     <div className="flex items-center space-x-4 mt-1">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(review.status)}`}>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        review.status === 'completed' 
+                          ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                          : review.status === 'running'
+                          ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
+                      }`}>
                         {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
                       </span>
                       <span className="text-sm text-gray-600 dark:text-gray-400">

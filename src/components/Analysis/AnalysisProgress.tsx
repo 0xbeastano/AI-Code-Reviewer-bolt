@@ -160,7 +160,7 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
         
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
           <motion.div
-            className="bg-gradient-to-r from-primary-500 to-purple-500 h-4 rounded-full"
+            className="bg-gradient-ai h-4 rounded-full"
             initial={{ width: 0 }}
             animate={{ width: `${animatedProgress}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}

@@ -101,6 +101,13 @@ export default {
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'gradient-premium': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'gradient-ai': 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+        'gradient-dark': 'linear-gradient(to bottom, #0f172a, #1e293b)',
+      },
     },
   },
   plugins: [],

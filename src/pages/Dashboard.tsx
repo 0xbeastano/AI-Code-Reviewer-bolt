@@ -8,10 +8,8 @@ import {
   GitBranch, 
   Clock, 
   TrendingUp,
-  AlertTriangle,
   CheckCircle,
   Users,
-  Code2,
   Brain,
   Target,
   Rocket,
@@ -131,7 +129,7 @@ const Dashboard: React.FC = () => {
           >
             <Brain className="w-8 h-8 text-primary-600 dark:text-primary-400 mr-3" />
             AI Code Review Dashboard
-            <span className="ml-3 px-3 py-1 text-sm bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full flex items-center">
+            <span className="ml-3 px-3 py-1 text-sm bg-gradient-ai text-white rounded-full flex items-center">
               <Sparkles className="w-3 h-3 mr-1" />
               GPT-4 Powered
             </span>
@@ -174,7 +172,7 @@ const Dashboard: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl p-8 text-white shadow-2xl"
+        className="bg-gradient-ai rounded-2xl p-8 text-white shadow-2xl"
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -188,7 +186,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center space-x-6 text-sm text-blue-100">
               <div className="flex items-center">
                 <Clock className="w-4 h-4 mr-1" />
-                <span>&lt; 30 seconds</span>
+                <span>< 30 seconds</span>
               </div>
               <div className="flex items-center">
                 <Star className="w-4 h-4 mr-1" />
@@ -252,7 +250,7 @@ const Dashboard: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 rounded-xl p-6 text-white shadow-xl"
+        className="bg-gradient-premium rounded-xl p-6 text-white shadow-xl"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -350,7 +348,7 @@ const Dashboard: React.FC = () => {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Analysis Speed</span>
-              <span className="text-sm font-medium text-gray-900 dark:text-white">&lt; 30 seconds</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">< 30 seconds</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">Accuracy Rate</span>

@@ -22,7 +22,7 @@ const Header: React.FC = () => {
           <div className="flex items-center space-x-8">
             <Link to="/" className="flex items-center space-x-3 group">
               <motion.div 
-                className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-primary-500 to-purple-500 rounded-lg shadow-lg"
+                className="flex items-center justify-center w-10 h-10 bg-gradient-ai rounded-lg shadow-lg"
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -55,7 +55,7 @@ const Header: React.FC = () => {
                     {item.name}
                     {isActive && (
                       <motion.div
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 to-purple-500 rounded-full"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-ai rounded-full"
                         layoutId="activeTab"
                         initial={false}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}

@@ -34,7 +34,7 @@ export const AuthPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex">
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-purple-600 to-blue-700" />
+        <div className="absolute inset-0 bg-gradient-ai" />
         <div className="absolute inset-0 bg-black/20" />
         
         <div className="relative z-10 flex flex-col justify-center px-12 text-white">

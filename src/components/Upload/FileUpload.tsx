@@ -77,7 +77,7 @@ const FileUpload: React.FC = () => {
     <div className="w-full max-w-4xl mx-auto">
       <div className="mb-8 text-center">
         <motion.div 
-          className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-purple-500 rounded-full mx-auto mb-4"
+          className="flex items-center justify-center w-16 h-16 bg-gradient-ai rounded-full mx-auto mb-4"
           animate={{ rotate: [0, 360] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
@@ -138,7 +138,7 @@ const FileUpload: React.FC = () => {
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2">
               <motion.div
-                className="bg-gradient-to-r from-primary-500 to-purple-500 h-3 rounded-full"
+                className="bg-gradient-ai h-3 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${uploadProgress.percentage}%` }}
                 transition={{ duration: 0.3 }}
@@ -181,7 +181,7 @@ const FileUpload: React.FC = () => {
           >
             <div className={`p-4 rounded-full ${
               dragActive 
-                ? 'bg-gradient-to-r from-primary-500 to-purple-500' 
+                ? 'bg-gradient-ai' 
                 : 'bg-gray-100 dark:bg-gray-800'
             }`}>
               <Upload className={`w-12 h-12 ${
@@ -202,7 +202,7 @@ const FileUpload: React.FC = () => {
             
             <motion.button
               onClick={openFileDialog}
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-lg"
+              className="inline-flex items-center px-8 py-4 bg-gradient-ai hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-lg"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
