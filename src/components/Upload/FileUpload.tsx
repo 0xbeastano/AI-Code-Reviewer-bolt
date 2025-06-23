@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, FileText, Folder, AlertCircle, CheckCircle, X, Code2, Sparkles, Zap } from 'lucide-react';
+import { Upload, FileText, Folder, AlertCircle, CheckCircle, X, Code2, Sparkles, Zap, FileCode, Database } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCodebase } from '../../contexts/CodebaseContext';
 import { FileService } from '../../services/fileService';
@@ -11,6 +11,11 @@ const FileUpload: React.FC = () => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fileStats, setFileStats] = useState<{
+    fileCount: number;
+    languageCount: number;
+    size: number;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileService = FileService.getInstance();
 
@@ -29,6 +34,15 @@ const FileUpload: React.FC = () => {
     try {
       const codebase = await fileService.processUpload(file, setUploadProgress);
       setCurrentCodebase(codebase);
+      
+      // Calculate file stats
+      const languages = new Set(codebase.files.map(f => f.language));
+      setFileStats({
+        fileCount: codebase.files.length,
+        languageCount: languages.size,
+        size: Math.round(codebase.totalSize / 1024) // Convert to KB
+      });
+      
       setUploadProgress(null);
       toast.success(`🎉 Successfully uploaded ${codebase.files.length} files!`);
     } catch (err) {
@@ -152,12 +166,55 @@ const FileUpload: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {fileStats && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+        >
+          <div className="flex items-center mb-3">
+            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
+            <span className="text-green-700 dark:text-green-300 font-medium">
+              Codebase Uploaded Successfully
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4 mt-3">
+            <div className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <FileCode className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Files</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{fileStats.fileCount}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <Code2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Languages</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{fileStats.languageCount}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <Database className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Size</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{fileStats.size} KB</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       <motion.div
-        className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
-          dragActive
+        className={`
+          relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 
+          ${dragActive
             ? 'border-primary-500 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 scale-105'
             : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
-        }`}
+          }
+        `}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart3, 
   Shield, 
@@ -18,7 +18,11 @@ import {
   Play,
   ArrowRight,
   Star,
-  Sparkles
+  Sparkles,
+  FileText,
+  Code,
+  RefreshCw,
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { codeReviewService } from '../services/codeReviewService';
@@ -28,12 +32,39 @@ import QualityTrends from '../components/Dashboard/QualityTrends';
 import SecurityAlerts from '../components/Dashboard/SecurityAlerts';
 import TeamActivity from '../components/Dashboard/TeamActivity';
 import QuickActions from '../components/Dashboard/QuickActions';
+import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
+  const [isLoading, setIsLoading] = useState(true);
+  const [metrics, setMetrics] = useState({
+    repoCount: 0,
+    securityScore: 0,
+    qualityGain: 0,
+    performanceGain: 0,
+    bugsFixed: 0,
+    linesRefactored: 0
+  });
 
-  // Mock impressive data for demo
+  // Simulate API data loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMetrics({
+        repoCount: 3,
+        securityScore: 95,
+        qualityGain: 34,
+        performanceGain: 28,
+        bugsFixed: 1247,
+        linesRefactored: 8432
+      });
+      setIsLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Mock repositories data
   const mockRepositories = [
     {
       id: '1',
@@ -64,6 +95,7 @@ const Dashboard: React.FC = () => {
     }
   ];
 
+  // Mock recent reviews data
   const mockRecentReviews = [
     {
       id: 'review-1',
@@ -117,6 +149,24 @@ const Dashboard: React.FC = () => {
     navigate('/review');
   };
 
+  const handleRefreshMetrics = () => {
+    setIsLoading(true);
+    toast.success('Refreshing metrics...');
+    
+    setTimeout(() => {
+      setMetrics({
+        repoCount: metrics.repoCount,
+        securityScore: Math.min(99, metrics.securityScore + Math.floor(Math.random() * 3)),
+        qualityGain: Math.min(50, metrics.qualityGain + Math.floor(Math.random() * 4)),
+        performanceGain: Math.min(40, metrics.performanceGain + Math.floor(Math.random() * 3)),
+        bugsFixed: metrics.bugsFixed + Math.floor(Math.random() * 50),
+        linesRefactored: metrics.linesRefactored + Math.floor(Math.random() * 200)
+      });
+      setIsLoading(false);
+      toast.success('Metrics updated successfully!');
+    }, 1500);
+  };
+
   return (
     <div className="space-y-8">
       {/* Enhanced Header with AI Branding */}
@@ -156,6 +206,16 @@ const Dashboard: React.FC = () => {
             <option value="90d">Last 90 days</option>
           </select>
           
+          <motion.button
+            onClick={handleRefreshMetrics}
+            disabled={isLoading}
+            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+          </motion.button>
+          
           <motion.div
             className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg"
             whileHover={{ scale: 1.05 }}
@@ -178,10 +238,10 @@ const Dashboard: React.FC = () => {
           <div className="flex-1">
             <h2 className="text-2xl font-bold mb-2 flex items-center">
               <Rocket className="w-7 h-7 mr-3" />
-              Start Your AI Code Review
+              Automated AI Code Review for 10x Developer Productivity
             </h2>
             <p className="text-blue-100 mb-4 text-lg">
-              Upload your code and get instant AI-powered analysis with ChatGPT-4
+              Upload your codebase. Get intelligent, GPT-4 powered code analysis, refactoring suggestions, and quality insights.
             </p>
             <div className="flex items-center space-x-6 text-sm text-blue-100">
               <div className="flex items-center">
@@ -211,39 +271,289 @@ const Dashboard: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Enhanced Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Repositories Connected"
-          value={dashboardMetrics.totalRepositories}
-          icon={GitBranch}
-          color="blue"
-          trend={{ value: 25, direction: 'up' }}
-        />
+      {/* Live KPI Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-blue-500/10 rounded-full -ml-8 -mb-8"></div>
+          
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <GitBranch className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Repositories Reviewed</h3>
+                <AnimatePresence mode="wait">
+                  <motion.p 
+                    key={metrics.repoCount}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="text-2xl font-bold text-gray-900 dark:text-white"
+                  >
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    ) : (
+                      metrics.repoCount
+                    )}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
+            </div>
+            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              +25%
+            </div>
+          </div>
+          
+          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
+            <div className="h-1 bg-blue-500 rounded-full" style={{ width: '75%' }}></div>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            75% of monthly goal
+          </div>
+        </motion.div>
         
-        <MetricCard
-          title="Active AI Reviews"
-          value={dashboardMetrics.activeReviews}
-          icon={Brain}
-          color="purple"
-          trend={{ value: 15, direction: 'up' }}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -mr-12 -mt-12"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-green-500/10 rounded-full -ml-8 -mb-8"></div>
+          
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <Shield className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Security Score</h3>
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={metrics.securityScore}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="flex items-center"
+                  >
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    ) : (
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{metrics.securityScore}%</p>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              +8%
+            </div>
+          </div>
+          
+          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
+            <div className="h-1 bg-green-500 rounded-full" style={{ width: `${metrics.securityScore}%` }}></div>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {metrics.securityScore >= 90 ? 'Excellent' : metrics.securityScore >= 80 ? 'Good' : 'Needs improvement'}
+          </div>
+        </motion.div>
         
-        <MetricCard
-          title="Security Score"
-          value={`${95}%`}
-          icon={Shield}
-          color="green"
-          trend={{ value: 8, direction: 'up' }}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full -mr-12 -mt-12"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-purple-500/10 rounded-full -ml-8 -mb-8"></div>
+          
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Quality Improvement</h3>
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={metrics.qualityGain}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="flex items-center"
+                  >
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    ) : (
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">+{metrics.qualityGain}%</p>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              +12%
+            </div>
+          </div>
+          
+          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
+            <div className="h-1 bg-purple-500 rounded-full" style={{ width: `${Math.min(100, metrics.qualityGain * 2)}%` }}></div>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {metrics.qualityGain >= 30 ? 'Exceptional' : metrics.qualityGain >= 20 ? 'Significant' : 'Moderate'} improvement
+          </div>
+        </motion.div>
         
-        <MetricCard
-          title="Quality Improvement"
-          value={`+${34}%`}
-          icon={TrendingUp}
-          color="orange"
-          trend={{ value: 12, direction: 'up' }}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-full -mr-12 -mt-12"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-orange-500/10 rounded-full -ml-8 -mb-8"></div>
+          
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <Zap className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Performance Boost</h3>
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={metrics.performanceGain}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="flex items-center"
+                  >
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    ) : (
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">+{metrics.performanceGain}%</p>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              +15%
+            </div>
+          </div>
+          
+          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
+            <div className="h-1 bg-orange-500 rounded-full" style={{ width: `${Math.min(100, metrics.performanceGain * 2.5)}%` }}></div>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {metrics.performanceGain >= 25 ? 'Major' : metrics.performanceGain >= 15 ? 'Significant' : 'Moderate'} optimization
+          </div>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full -mr-12 -mt-12"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-red-500/10 rounded-full -ml-8 -mb-8"></div>
+          
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Bugs Prevented</h3>
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={metrics.bugsFixed}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="flex items-center"
+                  >
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    ) : (
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{metrics.bugsFixed.toLocaleString()}</p>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              +18%
+            </div>
+          </div>
+          
+          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
+            <div className="h-1 bg-red-500 rounded-full" style={{ width: '85%' }}></div>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            85% of potential issues detected
+          </div>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full -mr-12 -mt-12"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-indigo-500/10 rounded-full -ml-8 -mb-8"></div>
+          
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Lines Refactored</h3>
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={metrics.linesRefactored}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="flex items-center"
+                  >
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    ) : (
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{metrics.linesRefactored.toLocaleString()}</p>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              +22%
+            </div>
+          </div>
+          
+          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
+            <div className="h-1 bg-indigo-500 rounded-full" style={{ width: '78%' }}></div>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            78% code improvement rate
+          </div>
+        </motion.div>
       </div>
 
       {/* AI Impact Showcase */}
@@ -378,32 +688,55 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Revenue Potential Showcase */}
+      {/* Recent Projects */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
       >
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <Target className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
-          Revenue Impact Projection
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">$600K</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Annual Revenue Potential</div>
-            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">Indie hacker dream 🚀</div>
-          </div>
-          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">50M+</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Developers Worldwide</div>
-            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">Total addressable market</div>
-          </div>
-          <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">$10B</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Market Opportunity</div>
-            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">Code review automation</div>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+            <Code className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
+            Recent Projects
+          </h3>
+          <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+            View all
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {mockRepositories.map((repo, index) => (
+            <motion.div
+              key={repo.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * index }}
+              className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-300 dark:hover:border-primary-600 transition-all cursor-pointer"
+              whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+            >
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <GitBranch className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-white">{repo.name}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{repo.language}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>Last scan: Today</span>
+                <span className={`px-2 py-1 rounded-full ${
+                  repo.isPrivate 
+                    ? 'bg-gray-100 dark:bg-gray-700' 
+                    : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                }`}>
+                  {repo.isPrivate ? 'Private' : 'Public'}
+                </span>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </motion.div>
     </div>

@@ -1,7 +1,8 @@
-import React from 'react';
-import { Settings, Shield, Zap, Eye, Wrench } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, Shield, Zap, Eye, Wrench, Code, FileCode, Database, Sparkles } from 'lucide-react';
 import { ReviewConfig } from '../../types';
 import Toggle from '../UI/Toggle';
+import { motion } from 'framer-motion';
 
 interface ConfigurationPanelProps {
   config: ReviewConfig;
@@ -14,6 +15,8 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onConfigChange,
   onStartAnalysis,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  
   const updatePriorities = (key: keyof ReviewConfig['priorities'], value: boolean) => {
     onConfigChange({
       ...config,
@@ -31,12 +34,21 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       excludePatterns: patterns.split('\n').filter(p => p.trim()),
     });
   };
+  
+  const handleStartAnalysis = () => {
+    setIsLoading(true);
+    // Simulate loading
+    setTimeout(() => {
+      setIsLoading(false);
+      onStartAnalysis();
+    }, 1000);
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="mb-8 text-center">
-        <div className="flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900 rounded-full mx-auto mb-4">
-          <Settings className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+        <div className="flex items-center justify-center w-16 h-16 bg-gradient-ai rounded-full mx-auto mb-4">
+          <Settings className="w-8 h-8 text-white" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Configure Analysis
@@ -50,11 +62,15 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         <div className="p-6 space-y-8">
           {/* Review Priorities */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
               Review Priorities
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <motion.div 
+                className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/10 dark:to-red-900/20 rounded-lg border border-red-200 dark:border-red-800"
+                whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+              >
                 <div className="flex items-center space-x-3">
                   <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
                   <div>
@@ -72,9 +88,12 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                   description="Enable security vulnerability detection and fixes"
                   persistKey="security_priority"
                 />
-              </div>
+              </motion.div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <motion.div 
+                className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/10 dark:to-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800"
+                whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+              >
                 <div className="flex items-center space-x-3">
                   <Zap className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                   <div>
@@ -92,9 +111,12 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                   description="Enable performance optimization detection"
                   persistKey="performance_priority"
                 />
-              </div>
+              </motion.div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <motion.div 
+                className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/10 dark:to-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+              >
                 <div className="flex items-center space-x-3">
                   <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <div>
@@ -112,9 +134,12 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                   description="Enable code clarity and style improvements"
                   persistKey="readability_priority"
                 />
-              </div>
+              </motion.div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <motion.div 
+                className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/10 dark:to-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
+                whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+              >
                 <div className="flex items-center space-x-3">
                   <Wrench className="w-5 h-5 text-green-600 dark:text-green-400" />
                   <div>
@@ -132,24 +157,26 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                   description="Enable long-term code health improvements"
                   persistKey="maintainability_priority"
                 />
-              </div>
+              </motion.div>
             </div>
           </div>
 
           {/* Aggressiveness Level */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Code className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
               Improvement Aggressiveness
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {(['conservative', 'moderate', 'aggressive'] as const).map((level) => (
-                <label
+                <motion.label
                   key={level}
                   className={`p-4 border-2 rounded-lg cursor-pointer transition-all focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-gray-900 ${
                     config.aggressiveness === level
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                       : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600'
                   }`}
+                  whileHover={{ y: -2, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
                 >
                   <input
                     type="radio"
@@ -161,6 +188,18 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                     aria-describedby={`${level}-description`}
                   />
                   <div className="text-center">
+                    <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${
+                      level === 'conservative' 
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                        : level === 'moderate'
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                    }`}>
+                      {level === 'conservative' && <Shield className="w-6 h-6" />}
+                      {level === 'moderate' && <Code className="w-6 h-6" />}
+                      {level === 'aggressive' && <Zap className="w-6 h-6" />}
+                    </div>
+                    
                     <p className="font-medium text-gray-900 dark:text-white capitalize mb-2">
                       {level}
                     </p>
@@ -170,14 +209,15 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                       {level === 'aggressive' && 'Comprehensive refactoring and optimization'}
                     </p>
                   </div>
-                </label>
+                </motion.label>
               ))}
             </div>
           </div>
 
           {/* Exclude Patterns */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <FileCode className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
               Exclude Patterns
             </h3>
             <div className="space-y-2">
@@ -202,13 +242,26 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl">
           <div className="flex justify-center">
-            <button
-              onClick={onStartAnalysis}
-              className="px-8 py-3 bg-primary-600 hover:bg-primary-700 focus:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+            <motion.button
+              onClick={handleStartAnalysis}
+              disabled={isLoading}
+              className="px-8 py-3 bg-gradient-ai hover:opacity-90 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              whileHover={{ scale: isLoading ? 1 : 1.05 }}
+              whileTap={{ scale: isLoading ? 1 : 0.95 }}
               aria-describedby="start-analysis-help"
             >
-              Start AI Analysis
-            </button>
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Starting Analysis...
+                </>
+              ) : (
+                <>
+                  <Database className="w-5 h-5 mr-2" />
+                  Start AI Analysis
+                </>
+              )}
+            </motion.button>
             <p id="start-analysis-help" className="sr-only">
               Begin the AI-powered code analysis with your selected configuration
             </p>
