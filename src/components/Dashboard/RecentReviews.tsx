@@ -2,23 +2,60 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Clock, CheckCircle, XCircle, AlertCircle, ExternalLink, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 interface CodeReviewResult {
   id: string;
   status: 'completed' | 'running' | 'failed';
   startedAt: Date;
   progress: number;
-  summary: {
+  summary?: {
     issuesFound?: number;
     qualityScore?: number;
   };
 }
 
 interface RecentReviewsProps {
-  reviews: CodeReviewResult[];
+  reviews?: CodeReviewResult[];
 }
 
 const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
+  // If no reviews are provided, use these default ones
+  const defaultReviews = [
+    {
+      id: 'review-1',
+      status: 'completed' as const,
+      startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      progress: 100,
+      summary: {
+        issuesFound: 23,
+        qualityScore: 89
+      }
+    },
+    {
+      id: 'review-2', 
+      status: 'running' as const,
+      startedAt: new Date(Date.now() - 30 * 60 * 1000),
+      progress: 67,
+      summary: {
+        issuesFound: 0,
+        qualityScore: 0
+      }
+    },
+    {
+      id: 'review-3',
+      status: 'completed' as const,
+      startedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      progress: 100,
+      summary: {
+        issuesFound: 15,
+        qualityScore: 92
+      }
+    }
+  ];
+
+  const displayReviews = reviews.length > 0 ? reviews : defaultReviews;
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -51,7 +88,7 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
       </div>
 
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {reviews.length === 0 ? (
+        {displayReviews.length === 0 ? (
           <div className="p-8 text-center">
             <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
@@ -59,7 +96,7 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
             </p>
           </div>
         ) : (
-          reviews.map((review, index) => (
+          displayReviews.map((review, index) => (
             <motion.div
               key={review.id}
               initial={{ opacity: 0, x: -20 }}
@@ -104,9 +141,12 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
                     </div>
                   )}
                   
-                  <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                  <Link 
+                    to={`/review/${review.id}/results`}
+                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  >
                     <ExternalLink className="w-4 h-4" />
-                  </button>
+                  </Link>
                 </div>
               </div>
 
@@ -131,14 +171,15 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
         )}
       </div>
 
-      {reviews.length > 0 && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <button className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center">
-            View all reviews
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
-        </div>
-      )}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <Link 
+          to="/review"
+          className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center"
+        >
+          View all reviews
+          <ChevronRight className="w-4 h-4 ml-1" />
+        </Link>
+      </div>
     </div>
   );
 };

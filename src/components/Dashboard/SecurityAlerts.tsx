@@ -12,10 +12,40 @@ interface SecurityAlert {
 }
 
 interface SecurityAlertsProps {
-  alerts: SecurityAlert[];
+  alerts?: SecurityAlert[];
 }
 
 const SecurityAlerts: React.FC<SecurityAlertsProps> = ({ alerts = [] }) => {
+  // If no alerts are provided, use these default ones
+  const defaultAlerts = [
+    {
+      id: '1',
+      type: 'critical',
+      title: 'SQL Injection Vulnerability',
+      description: 'Potential SQL injection found in user authentication',
+      repository: 'web-app',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
+    },
+    {
+      id: '2',
+      type: 'warning',
+      title: 'Outdated Dependencies',
+      description: '3 dependencies have known security vulnerabilities',
+      repository: 'api-service',
+      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000)
+    },
+    {
+      id: '3',
+      type: 'info',
+      title: 'Security Scan Complete',
+      description: 'No new vulnerabilities found in latest scan',
+      repository: 'mobile-app',
+      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000)
+    }
+  ];
+
+  const displayAlerts = alerts.length > 0 ? alerts : defaultAlerts;
+  
   const getAlertIcon = (type: string) => {
     switch (type) {
       case 'critical':
@@ -42,7 +72,7 @@ const SecurityAlerts: React.FC<SecurityAlertsProps> = ({ alerts = [] }) => {
     }
   };
 
-  const criticalCount = alerts.filter(alert => alert.type === 'critical').length;
+  const criticalCount = displayAlerts.filter(alert => alert.type === 'critical').length;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
@@ -64,13 +94,13 @@ const SecurityAlerts: React.FC<SecurityAlertsProps> = ({ alerts = [] }) => {
       </div>
 
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {alerts.length === 0 ? (
+        {displayAlerts.length === 0 ? (
           <div className="p-8 text-center">
             <Shield className="w-12 h-12 text-green-500 dark:text-green-400 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">No security alerts found</p>
           </div>
         ) : (
-          alerts.map((alert, index) => (
+          displayAlerts.map((alert, index) => (
             <motion.div
               key={alert.id}
               initial={{ opacity: 0, x: -20 }}

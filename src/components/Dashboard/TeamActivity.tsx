@@ -13,10 +13,43 @@ interface TeamActivityItem {
 }
 
 interface TeamActivityProps {
-  activities: TeamActivityItem[];
+  activities?: TeamActivityItem[];
 }
 
 const TeamActivity: React.FC<TeamActivityProps> = ({ activities = [] }) => {
+  // If no activities are provided, use these default ones
+  const defaultActivities = [
+    {
+      id: '1',
+      user: 'Alice Johnson',
+      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face',
+      action: 'completed code review',
+      target: 'user-auth-service',
+      timestamp: new Date(Date.now() - 30 * 60 * 1000),
+      type: 'review' as const
+    },
+    {
+      id: '2',
+      user: 'Bob Smith',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+      action: 'applied AI suggestions',
+      target: 'payment-gateway',
+      timestamp: new Date(Date.now() - 45 * 60 * 1000),
+      type: 'suggestion' as const
+    },
+    {
+      id: '3',
+      user: 'Carol Davis',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
+      action: 'created pull request',
+      target: 'mobile-app',
+      timestamp: new Date(Date.now() - 60 * 60 * 1000),
+      type: 'pr' as const
+    }
+  ];
+
+  const displayActivities = activities.length > 0 ? activities : defaultActivities;
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'review':
@@ -45,13 +78,13 @@ const TeamActivity: React.FC<TeamActivityProps> = ({ activities = [] }) => {
       </div>
 
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {activities.length === 0 ? (
+        {displayActivities.length === 0 ? (
           <div className="p-8 text-center">
             <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">No team activity found</p>
           </div>
         ) : (
-          activities.map((activity, index) => (
+          displayActivities.map((activity, index) => (
             <motion.div
               key={activity.id}
               initial={{ opacity: 0, x: -20 }}

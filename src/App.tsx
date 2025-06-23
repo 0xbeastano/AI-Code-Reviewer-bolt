@@ -16,6 +16,10 @@ import TestDashboard from './pages/TestDashboard';
 import { AuthPage } from './components/Auth/AuthPage';
 import { AuthCallback } from './pages/AuthCallback';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import LandingPage from './pages/LandingPage';
+import PricingPage from './pages/PricingPage';
+import DocumentationPage from './pages/DocumentationPage';
+import ReviewResults from './pages/ReviewResults';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -40,6 +44,9 @@ function App() {
                   <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                     <Routes>
                       {/* Public Routes */}
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/pricing" element={<PricingPage />} />
+                      <Route path="/docs" element={<DocumentationPage />} />
                       <Route 
                         path="/auth" 
                         element={
@@ -54,7 +61,7 @@ function App() {
                       <Route path="/test" element={<TestDashboard />} />
                       
                       {/* Protected Routes */}
-                      <Route path="/" element={
+                      <Route path="/dashboard" element={
                         <ProtectedRoute>
                           <Layout>
                             <Dashboard />
@@ -65,6 +72,13 @@ function App() {
                         <ProtectedRoute>
                           <Layout>
                             <CodeReview />
+                          </Layout>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/review/:id/results" element={
+                        <ProtectedRoute>
+                          <Layout>
+                            <ReviewResults />
                           </Layout>
                         </ProtectedRoute>
                       } />

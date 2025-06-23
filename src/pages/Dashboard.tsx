@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   BarChart3, 
   Shield, 
@@ -19,6 +19,10 @@ import { useQuery } from 'react-query';
 
 // Import components
 import QualityTrends from '../components/Dashboard/QualityTrends';
+import RecentReviews from '../components/Dashboard/RecentReviews';
+import SecurityAlerts from '../components/Dashboard/SecurityAlerts';
+import TeamActivity from '../components/Dashboard/TeamActivity';
+import QuickActions from '../components/Dashboard/QuickActions';
 import { codeReviewService } from '../services/codeReviewService';
 
 const Dashboard: React.FC = () => {
@@ -33,6 +37,16 @@ const Dashboard: React.FC = () => {
     {
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
+    }
+  );
+
+  // Fetch repositories for QuickActions
+  const { data: repositories } = useQuery(
+    'repositories',
+    codeReviewService.getRepositories,
+    {
+      refetchOnWindowFocus: false,
+      staleTime: 10 * 60 * 1000, // 10 minutes
     }
   );
 
@@ -175,21 +189,19 @@ const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Analysis Completed</h3>
-                <AnimatePresence mode="wait">
-                  <motion.p 
-                    key={isLoading ? 'loading' : 'loaded'}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="text-2xl font-bold text-gray-900 dark:text-white"
-                  >
-                    {isLoading ? (
-                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    ) : (
-                      dashboardData?.metrics?.repoCount || 0
-                    )}
-                  </motion.p>
-                </AnimatePresence>
+                <motion.p 
+                  key={isLoading ? 'loading' : 'loaded'}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="text-2xl font-bold text-gray-900 dark:text-white"
+                >
+                  {isLoading ? (
+                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  ) : (
+                    dashboardData?.metrics?.repoCount || 0
+                  )}
+                </motion.p>
               </div>
             </div>
             <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
@@ -222,21 +234,19 @@ const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Security Score</h3>
-                <AnimatePresence mode="wait">
-                  <motion.div 
-                    key={isLoading ? 'loading' : 'loaded'}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="flex items-center"
-                  >
-                    {isLoading ? (
-                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    ) : (
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{dashboardData?.metrics?.securityScore || 0}%</p>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+                <motion.div 
+                  key={isLoading ? 'loading' : 'loaded'}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center"
+                >
+                  {isLoading ? (
+                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{dashboardData?.metrics?.securityScore || 0}%</p>
+                  )}
+                </motion.div>
               </div>
             </div>
             <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
@@ -269,21 +279,19 @@ const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Quality Improvement</h3>
-                <AnimatePresence mode="wait">
-                  <motion.div 
-                    key={isLoading ? 'loading' : 'loaded'}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="flex items-center"
-                  >
-                    {isLoading ? (
-                      <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    ) : (
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">+{dashboardData?.metrics?.qualityGain || 0}%</p>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+                <motion.div 
+                  key={isLoading ? 'loading' : 'loaded'}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center"
+                >
+                  {isLoading ? (
+                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">+{dashboardData?.metrics?.qualityGain || 0}%</p>
+                  )}
+                </motion.div>
               </div>
             </div>
             <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
@@ -301,17 +309,30 @@ const Dashboard: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
-        {/* Quality Trends - Dynamic */}
-        {isLoading ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
-        ) : (
-          <QualityTrends data={dashboardData?.trends} />
-        )}
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Quality Trends - Dynamic */}
+          {isLoading ? (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+              <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            </div>
+          ) : (
+            <QualityTrends data={dashboardData?.trends} />
+          )}
+          
+          {/* Recent Reviews */}
+          <RecentReviews />
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          <QuickActions repositories={repositories || []} />
+          <SecurityAlerts />
+          <TeamActivity />
+        </div>
       </div>
     </div>
   );
