@@ -407,6 +407,7 @@ const Dashboard: React.FC = () => {
         </div>
       </motion.div>
     </div>
+  )
   );
 };
 
