@@ -85,7 +85,7 @@ export class AuthService {
     }
   }
 
-  private async createAuthSession(supabaseSession: Session): Promise<AuthSession> {
+  async createAuthSession(supabaseSession: Session): Promise<AuthSession> {
     const user = supabaseSession.user;
     return {
       user: {

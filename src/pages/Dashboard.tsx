@@ -24,6 +24,7 @@ import SecurityAlerts from '../components/Dashboard/SecurityAlerts';
 import TeamActivity from '../components/Dashboard/TeamActivity';
 import QuickActions from '../components/Dashboard/QuickActions';
 import { codeReviewService } from '../services/codeReviewService';
+import MetricCard from '../components/Dashboard/MetricCard';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -47,6 +48,19 @@ const Dashboard: React.FC = () => {
     {
       refetchOnWindowFocus: false,
       staleTime: 10 * 60 * 1000, // 10 minutes
+    }
+  );
+
+  // Fetch recent reviews
+  const { data: recentReviews } = useQuery(
+    'recentReviews',
+    async () => {
+      const data = await codeReviewService.getDashboardMetrics(timeRange);
+      return data.recentReviews || [];
+    },
+    {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
     }
   );
 
@@ -80,10 +94,21 @@ const Dashboard: React.FC = () => {
           >
             <Brain className="w-8 h-8 text-primary-600 dark:text-primary-400 mr-3" />
             AI Code Review Dashboard
-            <span className="ml-3 px-3 py-1 text-sm bg-gradient-ai text-white rounded-full flex items-center">
+            <motion.span 
+              className="ml-3 px-3 py-1 text-sm bg-gradient-ai text-white rounded-full flex items-center"
+              animate={{ 
+                scale: [1, 1.05, 1],
+                rotate: [0, 2, 0]
+              }}
+              transition={{ 
+                duration: 3, 
+                repeat: Infinity,
+                repeatType: "reverse"
+              }}
+            >
               <Sparkles className="w-3 h-3 mr-1" />
               GPT-4 Powered
-            </span>
+            </motion.span>
           </motion.h1>
           <motion.p 
             className="text-gray-600 dark:text-gray-400 mt-1"
@@ -120,6 +145,14 @@ const Dashboard: React.FC = () => {
           <motion.div
             className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-lg"
             whileHover={{ scale: 1.05 }}
+            animate={{ 
+              boxShadow: ["0px 0px 0px rgba(0,0,0,0.2)", "0px 5px 15px rgba(0,0,0,0.2)", "0px 0px 0px rgba(0,0,0,0.2)"]
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
           >
             <div className="flex items-center space-x-2">
               <Star className="w-4 h-4" />
@@ -173,140 +206,35 @@ const Dashboard: React.FC = () => {
 
       {/* Live KPI Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12"></div>
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-blue-500/10 rounded-full -ml-8 -mb-8"></div>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Analysis Completed</h3>
-                <motion.p 
-                  key={isLoading ? 'loading' : 'loaded'}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="text-2xl font-bold text-gray-900 dark:text-white"
-                >
-                  {isLoading ? (
-                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  ) : (
-                    dashboardData?.metrics?.repoCount || 0
-                  )}
-                </motion.p>
-              </div>
-            </div>
-            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
-              <TrendingUp className="w-4 h-4 mr-1" />
-              +25%
-            </div>
-          </div>
-          
-          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
-            <div className="h-1 bg-blue-500 rounded-full" style={{ width: '75%' }}></div>
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            75% of monthly goal
-          </div>
-        </motion.div>
+        <MetricCard
+          title="Analysis Completed"
+          value={isLoading ? "-" : dashboardData?.metrics?.repoCount || 0}
+          icon={BarChart3}
+          color="blue"
+          trend={{ value: 25, direction: 'up' }}
+          loading={isLoading}
+          subtitle="75% of monthly goal"
+        />
         
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -mr-12 -mt-12"></div>
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-green-500/10 rounded-full -ml-8 -mb-8"></div>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Shield className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Security Score</h3>
-                <motion.div 
-                  key={isLoading ? 'loading' : 'loaded'}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="flex items-center"
-                >
-                  {isLoading ? (
-                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  ) : (
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{dashboardData?.metrics?.securityScore || 0}%</p>
-                  )}
-                </motion.div>
-              </div>
-            </div>
-            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
-              <TrendingUp className="w-4 h-4 mr-1" />
-              +8%
-            </div>
-          </div>
-          
-          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
-            <div className="h-1 bg-green-500 rounded-full" style={{ width: `${dashboardData?.metrics?.securityScore || 0}%` }}></div>
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {(dashboardData?.metrics?.securityScore || 0) >= 90 ? 'Excellent' : (dashboardData?.metrics?.securityScore || 0) >= 80 ? 'Good' : 'Needs improvement'}
-          </div>
-        </motion.div>
+        <MetricCard
+          title="Security Score"
+          value={isLoading ? "-" : `${dashboardData?.metrics?.securityScore || 0}%`}
+          icon={Shield}
+          color="green"
+          trend={{ value: 8, direction: 'up' }}
+          loading={isLoading}
+          subtitle={(dashboardData?.metrics?.securityScore || 0) >= 90 ? 'Excellent' : (dashboardData?.metrics?.securityScore || 0) >= 80 ? 'Good' : 'Needs improvement'}
+        />
         
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full -mr-12 -mt-12"></div>
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-purple-500/10 rounded-full -ml-8 -mb-8"></div>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Quality Improvement</h3>
-                <motion.div 
-                  key={isLoading ? 'loading' : 'loaded'}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="flex items-center"
-                >
-                  {isLoading ? (
-                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  ) : (
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">+{dashboardData?.metrics?.qualityGain || 0}%</p>
-                  )}
-                </motion.div>
-              </div>
-            </div>
-            <div className="text-green-500 dark:text-green-400 font-medium text-sm flex items-center">
-              <TrendingUp className="w-4 h-4 mr-1" />
-              +12%
-            </div>
-          </div>
-          
-          <div className="h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full mb-1">
-            <div className="h-1 bg-purple-500 rounded-full" style={{ width: `${Math.min(100, (dashboardData?.metrics?.qualityGain || 0) * 2)}%` }}></div>
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {(dashboardData?.metrics?.qualityGain || 0) >= 30 ? 'Exceptional' : (dashboardData?.metrics?.qualityGain || 0) >= 20 ? 'Significant' : 'Moderate'} improvement
-          </div>
-        </motion.div>
+        <MetricCard
+          title="Quality Improvement"
+          value={isLoading ? "-" : `+${dashboardData?.metrics?.qualityGain || 0}%`}
+          icon={TrendingUp}
+          color="purple"
+          trend={{ value: 12, direction: 'up' }}
+          loading={isLoading}
+          subtitle={(dashboardData?.metrics?.qualityGain || 0) >= 30 ? 'Exceptional' : (dashboardData?.metrics?.qualityGain || 0) >= 20 ? 'Significant' : 'Moderate'}
+        />
       </div>
 
       {/* Main Content Grid */}
@@ -324,7 +252,7 @@ const Dashboard: React.FC = () => {
           )}
           
           {/* Recent Reviews */}
-          <RecentReviews />
+          <RecentReviews reviews={recentReviews} />
         </div>
 
         {/* Right Column */}

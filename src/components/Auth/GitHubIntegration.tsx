@@ -4,6 +4,7 @@ import { Github, GitBranch, Lock, Users, Star, ExternalLink, RefreshCw, CheckCir
 import { useAuth } from './AuthProvider';
 import { authService } from '../../lib/auth';
 import toast from 'react-hot-toast';
+import { supabase, isDemoMode } from '../../lib/supabase';
 
 interface Repository {
   id: number;
@@ -18,7 +19,7 @@ interface Repository {
 }
 
 export const GitHubIntegration: React.FC = () => {
-  const { user, isDemoMode } = useAuth();
+  const { user } = useAuth();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRepos, setSelectedRepos] = useState<Set<number>>(new Set());
@@ -40,12 +41,52 @@ export const GitHubIntegration: React.FC = () => {
         toast.error(error);
       } else {
         setRepositories(repos);
+        
+        // If not in demo mode, save repositories to Supabase
+        if (!isDemoMode && supabase && user) {
+          await saveRepositoriesToSupabase(repos);
+        }
+        
         toast.success(`✅ Loaded ${repos.length} repositories from GitHub`);
       }
     } catch (error) {
       toast.error('Failed to fetch repositories');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveRepositoriesToSupabase = async (repos: Repository[]) => {
+    if (!supabase || !user) return;
+    
+    try {
+      // For each repository, upsert to Supabase
+      const promises = repos.map(async (repo) => {
+        const { error } = await supabase
+          .from('repositories')
+          .upsert({
+            user_id: user.id,
+            name: repo.name,
+            full_name: repo.full_name,
+            provider: 'github',
+            url: repo.html_url,
+            language: repo.language,
+            is_private: repo.private,
+            last_sync: new Date().toISOString(),
+            status: 'active',
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id, full_name'
+          });
+          
+        if (error) {
+          console.error('Error saving repository:', error);
+        }
+      });
+      
+      await Promise.all(promises);
+    } catch (error) {
+      console.error('Error saving repositories to Supabase:', error);
     }
   };
 
@@ -94,9 +135,13 @@ export const GitHubIntegration: React.FC = () => {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+          <motion.div 
+            className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4"
+            whileHover={{ scale: 1.1, rotate: 10 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             <Github className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-          </div>
+          </motion.div>
           
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Connect GitHub Account
@@ -106,17 +151,46 @@ export const GitHubIntegration: React.FC = () => {
             Connect your GitHub account to analyze private repositories and get AI-powered code reviews directly from your repos.
           </p>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <motion.div 
+            className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
               What you'll get:
             </h4>
             <ul className="text-sm text-blue-600 dark:text-blue-300 space-y-1">
-              <li>• Access to private repositories</li>
-              <li>• Automated code analysis on commits</li>
-              <li>• Pull request integration</li>
-              <li>• Team collaboration features</li>
+              <motion.li 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                • Access to private repositories
+              </motion.li>
+              <motion.li 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                • Automated code analysis on commits
+              </motion.li>
+              <motion.li 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                • Pull request integration
+              </motion.li>
+              <motion.li 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                • Team collaboration features
+              </motion.li>
             </ul>
-          </div>
+          </motion.div>
 
           <motion.button
             onClick={handleConnectGitHub}
@@ -139,12 +213,20 @@ export const GitHubIntegration: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Connection Status */}
-      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+      <motion.div 
+        className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+            <motion.div 
+              className="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center"
+              whileHover={{ scale: 1.1, rotate: 10 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
               <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-            </div>
+            </motion.div>
             <div>
               <h3 className="font-medium text-green-800 dark:text-green-200">
                 GitHub Connected
@@ -155,18 +237,25 @@ export const GitHubIntegration: React.FC = () => {
             </div>
           </div>
           
-          <button
+          <motion.button
             onClick={fetchRepositories}
             disabled={loading}
             className="p-2 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-800 rounded-lg transition-colors disabled:opacity-50"
+            whileHover={{ scale: 1.1, rotate: 10 }}
+            whileTap={{ scale: 0.9 }}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Repository Selection */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+      <motion.div 
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -199,8 +288,18 @@ export const GitHubIntegration: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {repositories.map((repo) => (
-                <div key={repo.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              {repositories.map((repo, index) => (
+                <motion.div 
+                  key={repo.id} 
+                  className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ 
+                    backgroundColor: "rgba(243, 244, 246, 0.5)",
+                    dark: { backgroundColor: "rgba(55, 65, 81, 0.3)" }
+                  }}
+                >
                   <div className="flex items-start space-x-3">
                     <input
                       type="checkbox"
@@ -216,7 +315,12 @@ export const GitHubIntegration: React.FC = () => {
                         </h4>
                         
                         {repo.private && (
-                          <Lock className="w-4 h-4 text-gray-400" />
+                          <motion.div
+                            whileHover={{ scale: 1.2, rotate: 10 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                          >
+                            <Lock className="w-4 h-4 text-gray-400" />
+                          </motion.div>
                         )}
                         
                         {repo.language && (
@@ -244,21 +348,23 @@ export const GitHubIntegration: React.FC = () => {
                       </div>
                     </div>
                     
-                    <a
+                    <motion.a
                       href={repo.html_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      whileHover={{ scale: 1.2, rotate: 10 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
                       <ExternalLink className="w-4 h-4" />
-                    </a>
+                    </motion.a>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
