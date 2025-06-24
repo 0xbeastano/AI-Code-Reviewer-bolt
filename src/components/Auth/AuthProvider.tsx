@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { authService, AuthSession, User, supabase } from '../../lib/auth';
+import { authService, AuthSession, User } from '../../lib/auth';
+import { supabase, isDemoMode } from '../../lib/supabase';
 
 interface AuthContextType {
   session: AuthSession | null;
@@ -33,7 +34,6 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const isDemoMode = authService.isDemoMode();
 
   useEffect(() => {
     // Get initial session
@@ -50,12 +50,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, supabaseSession) => {
           if (event === 'SIGNED_IN' && supabaseSession) {
-            const authSession = await (authService as any).createAuthSession(supabaseSession);
+            const authSession = await authService.createAuthSession(supabaseSession);
             setSession(authSession);
           } else if (event === 'SIGNED_OUT') {
             setSession(null);
           } else if (event === 'TOKEN_REFRESHED' && supabaseSession) {
-            const authSession = await (authService as any).createAuthSession(supabaseSession);
+            const authSession = await authService.createAuthSession(supabaseSession);
             setSession(authSession);
           }
           setLoading(false);
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return () => subscription.unsubscribe();
     }
-  }, [isDemoMode]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     const result = await authService.signInWithEmail(email, password);

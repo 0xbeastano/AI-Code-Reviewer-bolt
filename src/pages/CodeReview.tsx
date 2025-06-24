@@ -14,7 +14,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useCodebase } from '../contexts/CodebaseContext';
-import { AIService } from '../services/aiService';
+import { codeReviewService } from '../services/codeReviewService';
 import FileUpload from '../components/Upload/FileUpload';
 import ConfigurationPanel from '../components/Configuration/ConfigurationPanel';
 import AnalysisProgress from '../components/Analysis/AnalysisProgress';
@@ -41,8 +41,7 @@ const CodeReview: React.FC = () => {
   const [currentAnalysisStep, setCurrentAnalysisStep] = useState('parsing');
   const [filesProcessed, setFilesProcessed] = useState(0);
   const [selectedAIModel, setSelectedAIModel] = useState('gpt-4o');
-
-  const aiService = AIService.getInstance();
+  const [reviewId, setReviewId] = useState<string | null>(null);
 
   const steps = [
     { id: 'upload', label: 'Upload Code', status: currentStep === 'upload' ? 'current' : currentCodebase ? 'completed' : 'upcoming' },
@@ -65,39 +64,34 @@ const CodeReview: React.FC = () => {
     toast.success(`🚀 Starting ${selectedAIModel.toUpperCase()} analysis...`);
 
     try {
-      const results = [];
-      const totalFiles = currentCodebase.files.length;
-      const analysisSteps = ['parsing', 'security', 'performance', 'quality', 'improvement', 'reporting'];
+      // Initiate code review in Supabase
+      const id = await codeReviewService.initiateCodeReview(currentCodebase, {
+        model: selectedAIModel,
+        ...reviewConfig
+      });
       
-      for (let i = 0; i < totalFiles; i++) {
-        const file = currentCodebase.files[i];
-        
-        // Update current step based on progress
-        const stepIndex = Math.floor((i / totalFiles) * analysisSteps.length);
-        setCurrentAnalysisStep(analysisSteps[stepIndex]);
-        
-        try {
-          // Call AI service for analysis with selected model
-          const analysis = await aiService.analyzeCode(file.content, file.language, file.path, false);
+      setReviewId(id);
+      
+      // Start analysis
+      const results = await codeReviewService.analyzeCode(
+        currentCodebase,
+        {
+          model: selectedAIModel,
+          ...reviewConfig
+        },
+        (progress) => {
+          setAnalysisProgress(progress);
           
-          results.push({
-            fileId: file.path,
-            filePath: file.path,
-            issues: analysis.issues,
-            metrics: analysis.metrics,
-            suggestions: analysis.suggestions,
-          });
-
-          setFilesProcessed(i + 1);
-          setAnalysisProgress(((i + 1) / totalFiles) * 100);
+          // Update current step based on progress
+          const analysisSteps = ['parsing', 'security', 'performance', 'quality', 'improvement', 'reporting'];
+          const stepIndex = Math.floor((progress / 100) * analysisSteps.length);
+          setCurrentAnalysisStep(analysisSteps[Math.min(stepIndex, analysisSteps.length - 1)]);
           
-          // Small delay to show progress
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (error) {
-          console.error(`Analysis failed for ${file.path}:`, error);
-          toast.error(`Analysis failed for ${file.path}`);
+          // Update files processed
+          const filesProcessed = Math.floor((progress / 100) * currentCodebase.files.length);
+          setFilesProcessed(filesProcessed);
         }
-      }
+      );
 
       setAnalysisResults(results);
       setIsAnalyzing(false);

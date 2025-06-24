@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { supabase, authService } from '../lib/auth';
+import { supabase } from '../lib/supabase';
+import { authService } from '../lib/auth';
 import { useAuth } from '../components/Auth/AuthProvider';
 import toast from 'react-hot-toast';
 
@@ -44,7 +45,7 @@ export const AuthCallback: React.FC = () => {
             toast.success(`Welcome ${user.name}! ${providerName} account connected successfully.`);
             
             // Redirect to the intended page or dashboard
-            const returnTo = sessionStorage.getItem('auth_return_to') || '/';
+            const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
             sessionStorage.removeItem('auth_return_to');
             navigate(returnTo);
             return;
@@ -73,7 +74,7 @@ export const AuthCallback: React.FC = () => {
             toast.success('Successfully signed in!');
             
             // Redirect to the intended page or dashboard
-            const returnTo = sessionStorage.getItem('auth_return_to') || '/';
+            const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
             sessionStorage.removeItem('auth_return_to');
             navigate(returnTo);
           } else {

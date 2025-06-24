@@ -1,20 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { Octokit } from '@octokit/rest';
 import { createOAuthAppAuth } from '@octokit/auth-oauth-app';
-
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Check if Supabase is properly configured
-const isSupabaseConfigured = supabaseUrl && 
-  supabaseAnonKey && 
-  supabaseUrl !== 'https://your-project.supabase.co' &&
-  supabaseAnonKey !== 'your-anon-key';
-
-export const supabase = isSupabaseConfigured 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+import { supabase, isDemoMode } from './supabase';
 
 // GitHub OAuth configuration
 export const githubOAuthConfig = {
@@ -44,6 +31,8 @@ export interface User {
   emailVerified: boolean;
   createdAt: Date;
   lastLoginAt: Date;
+  role?: 'admin' | 'developer' | 'viewer';
+  organization?: string;
 }
 
 export interface AuthSession {
@@ -56,7 +45,6 @@ export interface AuthSession {
 export class AuthService {
   private static instance: AuthService;
   private session: AuthSession | null = null;
-  private demoMode: boolean = false;
 
   static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -66,21 +54,17 @@ export class AuthService {
   }
 
   constructor() {
-    this.demoMode = !isSupabaseConfigured;
     this.initializeSession();
     
     // Log configuration status
-    if (this.demoMode) {
-      console.log('🔧 Running in Demo Mode - Supabase not configured');
+    if (isDemoMode) {
       console.log('🔗 GitHub OAuth configured:', !!githubOAuthConfig.clientId);
       console.log('🔗 Google OAuth configured:', !!googleOAuthConfig.clientId);
-    } else {
-      console.log('🚀 Production Mode Enabled - Connected to Supabase');
     }
   }
 
   private async initializeSession() {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // In demo mode, check localStorage for demo session
       const demoSession = localStorage.getItem('demo_session');
       if (demoSession) {
@@ -101,13 +85,13 @@ export class AuthService {
     }
   }
 
-  private async createAuthSession(supabaseSession: any): Promise<AuthSession> {
+  private async createAuthSession(supabaseSession: Session): Promise<AuthSession> {
     const user = supabaseSession.user;
     return {
       user: {
         id: user.id,
-        email: user.email,
-        name: user.user_metadata?.full_name || user.email,
+        email: user.email || '',
+        name: user.user_metadata?.full_name || user.email || '',
         avatar: user.user_metadata?.avatar_url,
         provider: user.app_metadata?.provider || 'email',
         githubToken: user.user_metadata?.provider_token,
@@ -115,11 +99,12 @@ export class AuthService {
         googleId: user.user_metadata?.sub,
         emailVerified: user.email_confirmed_at !== null,
         createdAt: new Date(user.created_at),
-        lastLoginAt: new Date(user.last_sign_in_at)
+        lastLoginAt: new Date(user.last_sign_in_at || user.created_at),
+        role: user.user_metadata?.role || 'developer'
       },
       accessToken: supabaseSession.access_token,
       refreshToken: supabaseSession.refresh_token,
-      expiresAt: new Date(supabaseSession.expires_at * 1000)
+      expiresAt: new Date(Date.now() + (supabaseSession.expires_in || 3600) * 1000)
     };
   }
 
@@ -133,6 +118,7 @@ export class AuthService {
         emailVerified: true,
         createdAt: new Date(),
         lastLoginAt: new Date(),
+        role: 'developer',
         ...additionalData
       },
       accessToken: `demo-token-${Date.now()}`,
@@ -146,7 +132,7 @@ export class AuthService {
 
   // Email/Password Authentication
   async signUpWithEmail(email: string, password: string, name: string): Promise<{ user: User | null; error: string | null }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // Demo mode - simulate successful signup
       this.session = this.createDemoSession(email, name, 'email');
       return { user: this.session.user, error: null };
@@ -178,14 +164,19 @@ export class AuthService {
         };
       }
 
-      return { user: data.user as any, error: null };
+      if (data.session) {
+        this.session = await this.createAuthSession(data.session);
+        return { user: this.session.user, error: null };
+      }
+
+      return { user: null, error: 'No session created' };
     } catch (error) {
       return { user: null, error: 'An unexpected error occurred during signup.' };
     }
   }
 
   async signInWithEmail(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // Demo mode - simulate successful signin
       this.session = this.createDemoSession(email, email.split('@')[0], 'email');
       return { user: this.session.user, error: null };
@@ -214,7 +205,7 @@ export class AuthService {
 
   // GitHub OAuth Authentication
   async signInWithGitHub(): Promise<{ url?: string; error?: string }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // In demo mode, use GitHub OAuth directly
       if (!githubOAuthConfig.clientId) {
         return { error: 'GitHub OAuth not configured' };
@@ -260,7 +251,7 @@ export class AuthService {
 
   // Google OAuth Authentication
   async signInWithGoogle(): Promise<{ url?: string; error?: string }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // In demo mode, use Google OAuth directly
       if (!googleOAuthConfig.clientId) {
         return { error: 'Google OAuth not configured' };
@@ -308,7 +299,7 @@ export class AuthService {
 
   // Handle GitHub OAuth callback (for demo mode)
   async handleGitHubCallback(code: string, state: string): Promise<{ user: User | null; error: string | null }> {
-    if (!this.demoMode) {
+    if (!isDemoMode) {
       return { user: null, error: 'OAuth callback should be handled by Supabase in production mode' };
     }
 
@@ -373,7 +364,8 @@ export class AuthService {
           githubUsername: userData.login,
           emailVerified: true,
           createdAt: new Date(),
-          lastLoginAt: new Date()
+          lastLoginAt: new Date(),
+          role: 'developer'
         },
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token || '',
@@ -390,7 +382,7 @@ export class AuthService {
 
   // Handle Google OAuth callback (for demo mode)
   async handleGoogleCallback(code: string, state: string): Promise<{ user: User | null; error: string | null }> {
-    if (!this.demoMode) {
+    if (!isDemoMode) {
       return { user: null, error: 'OAuth callback should be handled by Supabase in production mode' };
     }
 
@@ -447,7 +439,8 @@ export class AuthService {
           googleId: userData.id,
           emailVerified: userData.verified_email,
           createdAt: new Date(),
-          lastLoginAt: new Date()
+          lastLoginAt: new Date(),
+          role: 'developer'
         },
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token || '',
@@ -464,7 +457,7 @@ export class AuthService {
 
   // Session Management
   async signOut(): Promise<void> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       localStorage.removeItem('demo_session');
       this.session = null;
       return;
@@ -477,7 +470,7 @@ export class AuthService {
   }
 
   async refreshSession(): Promise<{ session: AuthSession | null; error: string | null }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // In demo mode, just return current session
       return { session: this.session, error: null };
     }
@@ -517,12 +510,12 @@ export class AuthService {
   }
 
   isDemoMode(): boolean {
-    return this.demoMode;
+    return isDemoMode;
   }
 
   // Password Reset
   async resetPassword(email: string): Promise<{ error: string | null }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // Demo mode - simulate password reset
       return { error: null };
     }
@@ -547,7 +540,7 @@ export class AuthService {
   }
 
   async updatePassword(newPassword: string): Promise<{ error: string | null }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // Demo mode - simulate password update
       return { error: null };
     }
@@ -573,7 +566,7 @@ export class AuthService {
 
   // GitHub Integration
   async getGitHubRepositories(): Promise<{ repositories: any[]; error: string | null }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       // Return mock repositories for demo
       const mockRepos = [
         {
@@ -623,7 +616,7 @@ export class AuthService {
   }
 
   async getRepositoryContent(owner: string, repo: string, path: string = ''): Promise<{ content: any; error: string | null }> {
-    if (this.demoMode) {
+    if (isDemoMode) {
       return { content: null, error: 'Demo mode - repository content not available' };
     }
 
@@ -646,26 +639,6 @@ export class AuthService {
     } catch (error) {
       return { content: null, error: 'Failed to fetch repository content.' };
     }
-  }
-
-  // Rate Limiting
-  private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-  checkRateLimit(identifier: string, maxRequests: number = 10, windowMs: number = 60000): boolean {
-    const now = Date.now();
-    const userLimit = this.rateLimitMap.get(identifier);
-
-    if (!userLimit || now > userLimit.resetTime) {
-      this.rateLimitMap.set(identifier, { count: 1, resetTime: now + windowMs });
-      return true;
-    }
-
-    if (userLimit.count >= maxRequests) {
-      return false;
-    }
-
-    userLimit.count++;
-    return true;
   }
 }
 

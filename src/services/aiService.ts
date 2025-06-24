@@ -7,7 +7,7 @@ export class AIService {
 
   constructor() {
     this.openai = new OpenAI({
-      apiKey: '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',
+      apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
       dangerouslyAllowBrowser: true
     });
   }
@@ -134,8 +134,8 @@ Provide actionable, specific feedback with clear examples. Be thorough but pract
       // Extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.warn(`Could not parse JSON from ${selectedModel.toUpperCase()} response, using enhanced fallback`);
-        return this.getEnhancedMockAnalysis(code, language, filePath, generateImprovedCode, selectedModel);
+        console.warn(`Could not parse JSON from ${selectedModel.toUpperCase()} response, using fallback`);
+        return this.getFallbackAnalysis(code, language, filePath, generateImprovedCode);
       }
 
       try {
@@ -167,14 +167,125 @@ Provide actionable, specific feedback with clear examples. Be thorough but pract
 
         return result;
       } catch (parseError) {
-        console.warn(`JSON parsing failed for ${selectedModel.toUpperCase()}, using enhanced fallback:`, parseError);
-        return this.getEnhancedMockAnalysis(code, language, filePath, generateImprovedCode, selectedModel);
+        console.warn(`JSON parsing failed for ${selectedModel.toUpperCase()}, using fallback:`, parseError);
+        return this.getFallbackAnalysis(code, language, filePath, generateImprovedCode);
       }
     } catch (error) {
       console.error(`${selectedModel.toUpperCase()} analysis failed:`, error);
-      // Enhanced fallback analysis
-      return this.getEnhancedMockAnalysis(code, language, filePath, generateImprovedCode, selectedModel);
+      // Fallback analysis
+      return this.getFallbackAnalysis(code, language, filePath, generateImprovedCode);
     }
+  }
+
+  private getFallbackAnalysis(code: string, language: string, filePath: string, generateImprovedCode: boolean = true): {
+    issues: any[];
+    suggestions: any[];
+    metrics: any;
+    improvedCode?: string;
+  } {
+    const lines = code.split('\n');
+    const codeLength = code.length;
+    
+    // Generate basic issues based on code content
+    const issues = [];
+    const suggestions = [];
+    
+    // Security analysis
+    if (code.includes('eval(') || code.includes('innerHTML') || code.includes('document.write')) {
+      issues.push({
+        id: 'security-xss-1',
+        type: 'security',
+        severity: 'critical',
+        line: Math.min(10, lines.length),
+        column: 1,
+        message: `Potential XSS vulnerability detected`,
+        rule: 'no-unsafe-eval',
+        suggestion: 'Use safer alternatives like JSON.parse() or textContent'
+      });
+    }
+    
+    // Performance analysis
+    if (code.includes('for (') && code.includes('.length')) {
+      issues.push({
+        id: 'performance-loop-1',
+        type: 'performance',
+        severity: 'medium',
+        line: Math.min(15, lines.length),
+        column: 1,
+        message: `Loop optimization opportunity identified`,
+        rule: 'no-length-in-loop',
+        suggestion: 'Cache the length value before the loop for better performance'
+      });
+    }
+    
+    // Code quality
+    if (language === 'javascript' && code.includes('var ')) {
+      issues.push({
+        id: 'style-var-1',
+        type: 'style',
+        severity: 'low',
+        line: Math.min(5, lines.length),
+        column: 1,
+        message: `Modern JavaScript practices recommended`,
+        rule: 'no-var',
+        suggestion: 'Replace var with let or const for better scoping'
+      });
+    }
+    
+    // Generate suggestions
+    suggestions.push({
+      id: 'suggestion-1',
+      type: 'style',
+      priority: 'medium',
+      description: `Code modernization suggested`,
+      before: 'function example() {',
+      after: 'function example(): void {',
+      impact: 'Better code readability and type safety'
+    });
+    
+    if (language === 'python') {
+      suggestions.push({
+        id: 'suggestion-2',
+        type: 'documentation',
+        priority: 'high',
+        description: `Enhanced documentation patterns`,
+        before: 'def process_data(data):',
+        after: 'def process_data(data: List[Dict]) -> Dict:\n    """Process input data and return results."""',
+        impact: 'Improved code documentation and maintainability'
+      });
+    }
+    
+    // Calculate metrics
+    const baseComplexity = Math.min(100, Math.max(10, (code.match(/if|for|while|switch|case/g) || []).length * 5 + 20));
+    const complexity = Math.round(baseComplexity);
+    const maintainability = Math.max(60, Math.round(100 - complexity + (code.includes('//') || code.includes('#') ? 10 : 0)));
+    const security = Math.max(70, Math.round(95 - issues.filter(i => i.type === 'security').length * 10));
+    const performance = Math.max(65, Math.round(90 - issues.filter(i => i.type === 'performance').length * 5));
+    
+    const result: {
+      issues: any[];
+      suggestions: any[];
+      metrics: any;
+      improvedCode?: string;
+    } = {
+      issues,
+      suggestions,
+      metrics: {
+        complexity,
+        maintainability,
+        security,
+        performance,
+        coverage: Math.floor(Math.random() * 40) + 60,
+        duplicateLines: Math.floor(codeLength / 1000),
+        linesOfCode: lines.filter(line => line.trim().length > 0).length
+      }
+    };
+
+    if (generateImprovedCode) {
+      result.improvedCode = code;
+    }
+
+    return result;
   }
 
   async generateDocumentation(code: string, language: string, modelId?: string): Promise<string> {
@@ -295,123 +406,5 @@ Respond in JSON format:
         testSuggestions: ['Manual testing recommended due to analysis error']
       };
     }
-  }
-
-  private getEnhancedMockAnalysis(code: string, language: string, filePath: string, generateImprovedCode: boolean = true, modelUsed: string = 'gpt-4o') {
-    const lines = code.split('\n');
-    const codeLength = code.length;
-    
-    // Generate more realistic issues based on code content and model capabilities
-    const issues = [];
-    const suggestions = [];
-    
-    // Model-specific analysis quality
-    const modelQuality = {
-      'gpt-4o': { accuracy: 0.95, issueDetection: 0.9 },
-      'gpt-4-turbo': { accuracy: 0.93, issueDetection: 0.85 },
-      'gpt-4': { accuracy: 0.97, issueDetection: 0.95 },
-      'claude-3-opus': { accuracy: 0.96, issueDetection: 0.92 },
-      'claude-3-sonnet': { accuracy: 0.91, issueDetection: 0.88 },
-      'claude-3-haiku': { accuracy: 0.85, issueDetection: 0.80 }
-    };
-
-    const quality = modelQuality[modelUsed as keyof typeof modelQuality] || modelQuality['gpt-4o'];
-    
-    // Security analysis
-    if (code.includes('eval(') || code.includes('innerHTML') || code.includes('document.write')) {
-      issues.push({
-        id: 'security-xss-1',
-        type: 'security',
-        severity: 'critical',
-        line: Math.min(10, lines.length),
-        column: 1,
-        message: `Potential XSS vulnerability detected by ${modelUsed.toUpperCase()}`,
-        rule: 'no-unsafe-eval',
-        suggestion: 'Use safer alternatives like JSON.parse() or textContent'
-      });
-    }
-    
-    // Performance analysis
-    if (code.includes('for (') && code.includes('.length')) {
-      issues.push({
-        id: 'performance-loop-1',
-        type: 'performance',
-        severity: 'medium',
-        line: Math.min(15, lines.length),
-        column: 1,
-        message: `Loop optimization opportunity identified by ${modelUsed.toUpperCase()}`,
-        rule: 'no-length-in-loop',
-        suggestion: 'Cache the length value before the loop for better performance'
-      });
-    }
-    
-    // Code quality based on model capabilities
-    if (language === 'javascript' && code.includes('var ') && quality.issueDetection > 0.8) {
-      issues.push({
-        id: 'style-var-1',
-        type: 'style',
-        severity: 'low',
-        line: Math.min(5, lines.length),
-        column: 1,
-        message: `Modern JavaScript practices recommended by ${modelUsed.toUpperCase()}`,
-        rule: 'no-var',
-        suggestion: 'Replace var with let or const for better scoping'
-      });
-    }
-    
-    // Generate model-specific suggestions
-    suggestions.push({
-      id: 'suggestion-1',
-      type: 'style',
-      priority: 'medium',
-      description: `Code modernization suggested by ${modelUsed.toUpperCase()}`,
-      before: 'function example() {',
-      after: 'function example(): void {',
-      impact: 'Better code readability and type safety'
-    });
-    
-    if (language === 'python' && quality.accuracy > 0.9) {
-      suggestions.push({
-        id: 'suggestion-2',
-        type: 'documentation',
-        priority: 'high',
-        description: `Enhanced documentation patterns from ${modelUsed.toUpperCase()}`,
-        before: 'def process_data(data):',
-        after: 'def process_data(data: List[Dict]) -> Dict:\n    """Process input data and return results."""',
-        impact: 'Improved code documentation and maintainability'
-      });
-    }
-    
-    // Calculate realistic metrics based on model quality
-    const baseComplexity = Math.min(100, Math.max(10, (code.match(/if|for|while|switch|case/g) || []).length * 5 + 20));
-    const complexity = Math.round(baseComplexity * (1 - quality.accuracy * 0.1));
-    const maintainability = Math.max(60, Math.round((100 - complexity + (code.includes('//') || code.includes('#') ? 10 : 0)) * quality.accuracy));
-    const security = Math.max(70, Math.round((95 - issues.filter(i => i.type === 'security').length * 10) * quality.accuracy));
-    const performance = Math.max(65, Math.round((90 - issues.filter(i => i.type === 'performance').length * 5) * quality.accuracy));
-    
-    const result: {
-      issues: any[];
-      suggestions: any[];
-      metrics: any;
-      improvedCode?: string;
-    } = {
-      issues,
-      suggestions,
-      metrics: {
-        complexity,
-        maintainability,
-        security,
-        performance,
-        coverage: Math.floor(Math.random() * 40) + 60,
-        duplicateLines: Math.floor(codeLength / 1000),
-        linesOfCode: lines.filter(line => line.trim().length > 0).length
-      }
-    };
-
-    if (generateImprovedCode) {
-      result.improvedCode = code;
-    }
-
-    return result;
   }
 }
