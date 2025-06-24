@@ -19,11 +19,9 @@ export const supabase = isSupabaseConfigured
 export const isDemoMode = !isSupabaseConfigured;
 
 // Log configuration status
-if (isDemoMode) {
-  console.log('🔧 Running in Demo Mode - Supabase not configured');
-} else {
-  console.log('🚀 Production Mode Enabled - Connected to Supabase');
-}
+console.log(isDemoMode 
+  ? '🔧 Running in Demo Mode - Supabase not configured' 
+  : '🚀 Production Mode Enabled - Connected to Supabase');
 
 // Database types
 export type CodeReview = {
