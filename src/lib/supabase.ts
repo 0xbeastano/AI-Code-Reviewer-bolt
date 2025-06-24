@@ -10,17 +10,42 @@ const isSupabaseConfigured = supabaseUrl &&
   supabaseUrl !== 'https://your-project.supabase.co' &&
   supabaseAnonKey !== 'your-anon-key';
 
-// Create Supabase client
+// Create Supabase client with error handling
 export const supabase = isSupabaseConfigured 
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        // Disable auto-refresh to prevent unnecessary requests in demo mode
+        autoRefreshToken: false,
+        // Set a longer timeout for auth requests
+        detectSessionInUrl: false
+      }
+    })
   : null;
 
-// Check if we're in demo mode
-export const isDemoMode = !isSupabaseConfigured;
+// Enhanced demo mode detection that also considers runtime errors
+let runtimeDemoMode = !isSupabaseConfigured;
+
+// Function to check if we should use demo mode
+export const isDemoMode = () => runtimeDemoMode;
+
+// Function to force demo mode (called when Supabase fails)
+export const enableDemoMode = () => {
+  runtimeDemoMode = true;
+  console.log('🔧 Switched to Demo Mode due to Supabase configuration issues');
+};
+
+// Test Supabase connection and handle reCAPTCHA errors
+if (isSupabaseConfigured && supabase) {
+  // Test the connection by attempting to get the session
+  supabase.auth.getSession().catch((error) => {
+    console.warn('Supabase connection test failed:', error);
+    // Don't force demo mode for session errors, as they're expected when not logged in
+  });
+}
 
 // Log configuration status
-console.log(isDemoMode 
-  ? '🔧 Running in Demo Mode - Supabase not configured' 
+console.log(isDemoMode() 
+  ? '🔧 Running in Demo Mode - Supabase not configured or unavailable' 
   : '🚀 Production Mode Enabled - Connected to Supabase');
 
 // Database types
