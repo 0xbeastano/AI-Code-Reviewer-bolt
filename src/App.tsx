@@ -96,6 +96,9 @@ function App() {
                           </Layout>
                         </ProtectedRoute>
                       } />
+                      
+                      {/* Fallback - Redirect to landing page */}
+                      <Route path="*" element={<LandingPage />} />
                     </Routes>
                     <Toaster 
                       position="top-right"

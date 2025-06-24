@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -19,7 +20,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-600 dark:text-primary-400 mx-auto mb-4" />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <Loader2 className="w-8 h-8 text-primary-600 dark:text-primary-400 mx-auto mb-4" />
+          </motion.div>
           <p className="text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
@@ -33,7 +39,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (!requireAuth && user) {
     // Redirect authenticated users away from auth pages
-    const from = location.state?.from?.pathname || '/';
+    const from = location.state?.from?.pathname || '/dashboard';
     return <Navigate to={from} replace />;
   }
 

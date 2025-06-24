@@ -3,13 +3,15 @@ import { Code2, Moon, Sun, Brain, Sparkles } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../Auth/AuthProvider';
 
 const Header: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   const navigation = [
-    { name: 'Dashboard', href: '/' },
+    { name: 'Dashboard', href: '/dashboard' },
     { name: 'Code Review', href: '/review' },
     { name: 'Analytics', href: '/analytics' },
     { name: 'Settings', href: '/settings' },
@@ -68,12 +70,23 @@ const Header: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <motion.div
-              className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-medium shadow-lg"
-              whileHover={{ scale: 1.05 }}
-            >
-              ✨ Direct Access
-            </motion.div>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  {user.name}
+                </div>
+                <button 
+                  onClick={() => signOut()}
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link to="/auth" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium">
+                Sign In
+              </Link>
+            )}
             
             <motion.button
               onClick={toggleTheme}
