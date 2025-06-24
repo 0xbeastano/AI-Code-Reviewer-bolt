@@ -60,10 +60,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
       
       if (error) {
         toast.error(error.message);
-      } else {
-        // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', '/dashboard');
       }
+      // Redirect is handled in the signInWithGitHub function
     } catch (error) {
       toast.error('Failed to sign in with GitHub');
     } finally {
@@ -78,10 +76,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
       
       if (error) {
         toast.error(error.message);
-      } else {
-        // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', '/dashboard');
       }
+      // Redirect is handled in the signInWithGoogle function
     } catch (error) {
       toast.error('Failed to sign in with Google');
     } finally {

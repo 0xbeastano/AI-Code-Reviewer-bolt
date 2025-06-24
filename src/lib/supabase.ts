@@ -11,20 +11,27 @@ const isSupabaseConfigured = supabaseUrl &&
   supabaseAnonKey !== 'your-anon-key';
 
 // Create Supabase client
-export const supabase = isSupabaseConfigured 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+let supabaseClient = null;
+
+try {
+  if (isSupabaseConfigured) {
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true
       }
-    })
-  : null;
+    });
+    console.log('🚀 Supabase client initialized successfully');
+  } else {
+    console.error('⚠️ Supabase configuration missing or invalid');
+  }
+} catch (error) {
+  console.error('⚠️ Failed to initialize Supabase client:', error);
+}
 
-// Log configuration status
-console.log(isSupabaseConfigured 
-  ? '🚀 Production Mode Enabled - Connected to Supabase' 
-  : '⚠️ Supabase connection failed - Check your environment variables');
+// Export the client
+export const supabase = supabaseClient;
 
 // Database types
 export type CodeReview = {

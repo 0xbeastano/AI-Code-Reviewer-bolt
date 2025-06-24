@@ -39,8 +39,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
-    reset
+    watch
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema)
   });
@@ -77,10 +76,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       
       if (error) {
         toast.error(error.message);
-      } else {
-        // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', '/dashboard');
       }
+      // Redirect is handled in the signInWithGitHub function
     } catch (error) {
       toast.error('Failed to sign up with GitHub');
     } finally {
@@ -95,10 +92,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       
       if (error) {
         toast.error(error.message);
-      } else {
-        // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', '/dashboard');
       }
+      // Redirect is handled in the signInWithGoogle function
     } catch (error) {
       toast.error('Failed to sign up with Google');
     } finally {

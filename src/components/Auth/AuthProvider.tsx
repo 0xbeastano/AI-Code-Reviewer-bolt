@@ -42,22 +42,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.warn('Failed to get initial session:', error);
+    const getInitialSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.warn('Failed to get initial session:', error);
+        }
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+      } finally {
+        setLoading(false);
       }
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    };
+
+    getInitialSession();
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -65,6 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (email: string, password: string) => {
     if (!supabase) {
+      toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
     }
 
@@ -87,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signUp = async (email: string, password: string) => {
     if (!supabase) {
+      toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
     }
 
@@ -126,6 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     if (!supabase) {
+      toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
     }
 
@@ -147,11 +155,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signInWithGitHub = async () => {
     if (!supabase) {
+      toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
     }
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -160,6 +169,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (error) {
         return { error };
+      }
+      
+      if (data.url) {
+        window.location.href = data.url;
       }
       
       return { error: undefined };
@@ -171,11 +184,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signInWithGoogle = async () => {
     if (!supabase) {
+      toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
     }
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -184,6 +198,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (error) {
         return { error };
+      }
+      
+      if (data.url) {
+        window.location.href = data.url;
       }
       
       return { error: undefined };
