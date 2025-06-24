@@ -66,12 +66,23 @@ const TeamActivity: React.FC<TeamActivityProps> = ({ activities = [] }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+    >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+        <motion.div 
+          className="flex items-center"
+          whileHover={{ x: 5 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
           <User className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
-          Team Activity
-        </h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Team Activity
+          </h3>
+        </motion.div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           Recent team member activities
         </p>
@@ -90,13 +101,20 @@ const TeamActivity: React.FC<TeamActivityProps> = ({ activities = [] }) => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
+              whileHover={{ 
+                x: 5,
+                backgroundColor: "rgba(243, 244, 246, 0.5)",
+                dark: { backgroundColor: "rgba(55, 65, 81, 0.3)" }
+              }}
               className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <img
+                <motion.img
                   src={activity.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.user)}&background=random`}
                   alt={activity.user}
                   className="w-8 h-8 rounded-full"
+                  whileHover={{ scale: 1.2, rotate: 10 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 />
                 
                 <div className="flex-1 min-w-0">
@@ -104,7 +122,12 @@ const TeamActivity: React.FC<TeamActivityProps> = ({ activities = [] }) => {
                     <span className="font-medium text-gray-900 dark:text-white text-sm">
                       {activity.user}
                     </span>
-                    {getActivityIcon(activity.type)}
+                    <motion.div
+                      whileHover={{ scale: 1.2, rotate: 10 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      {getActivityIcon(activity.type)}
+                    </motion.div>
                   </div>
                   
                   <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -123,12 +146,16 @@ const TeamActivity: React.FC<TeamActivityProps> = ({ activities = [] }) => {
       </div>
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <button className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center">
+        <motion.button 
+          className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center"
+          whileHover={{ x: 5 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
           View all activity
           <ChevronRight className="w-4 h-4 ml-1" />
-        </button>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

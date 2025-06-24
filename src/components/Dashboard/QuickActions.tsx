@@ -60,17 +60,32 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories = [] }) => {
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+    >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+          <motion.div 
+            className="flex items-center"
+            whileHover={{ x: 5 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             <Zap className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
-            Quick Actions
-          </h3>
-          <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Quick Actions
+            </h3>
+          </motion.div>
+          <motion.button 
+            className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center"
+            whileHover={{ x: 5 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             More
             <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
+          </motion.button>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           Common tasks and shortcuts
@@ -86,12 +101,16 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories = [] }) => {
             transition={{ delay: index * 0.1 }}
             onClick={action.onClick}
             className={`w-full flex items-center space-x-4 p-4 rounded-lg text-white transition-colors ${action.color}`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, x: 5 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="flex-shrink-0">
+            <motion.div 
+              className="flex-shrink-0"
+              whileHover={{ rotate: 10 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
               <action.icon className="w-6 h-6" />
-            </div>
+            </motion.div>
             
             <div className="flex-1 text-left">
               <h4 className="font-medium">{action.title}</h4>
@@ -109,10 +128,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories = [] }) => {
           </h4>
           <div className="space-y-2">
             {repositories.slice(0, 3).map((repo) => (
-              <button
+              <motion.button
                 key={repo.id}
                 onClick={() => navigate(`/review?repository=${repo.id}`)}
                 className="w-full flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                whileHover={{ x: 5, backgroundColor: "rgba(243, 244, 246, 0.8)" }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 <GitBranch className="w-4 h-4 text-gray-400" />
                 <div className="flex-1 min-w-0">
@@ -123,12 +144,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories = [] }) => {
                     {repo.language} • {repo.provider}
                   </p>
                 </div>
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

@@ -38,16 +38,24 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
     >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
+          <motion.div 
+            className="flex items-center"
+            whileHover={{ x: 5 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             <BarChart3 className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Quality Trends
             </h3>
-          </div>
-          <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+          </motion.div>
+          <motion.button 
+            className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center"
+            whileHover={{ x: 5 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             View details
             <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
+          </motion.button>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           Code quality metrics over time
@@ -55,7 +63,12 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
       </div>
 
       <div className="p-6">
-        <div className="h-64">
+        <motion.div 
+          className="h-64"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -76,6 +89,7 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
                   borderRadius: '8px',
                   color: 'var(--tooltip-color)'
                 }}
+                animationDuration={300}
               />
               <Legend />
               <Line 
@@ -86,6 +100,8 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
                 dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
                 name="Quality"
                 activeDot={{ r: 6, stroke: '#3B82F6', strokeWidth: 2 }}
+                animationDuration={1500}
+                animationEasing="ease-in-out"
               />
               <Line 
                 type="monotone" 
@@ -95,6 +111,9 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
                 dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
                 name="Security"
                 activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
+                animationDuration={1500}
+                animationEasing="ease-in-out"
+                animationBegin={300}
               />
               <Line 
                 type="monotone" 
@@ -104,10 +123,13 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
                 dot={{ fill: '#F59E0B', strokeWidth: 2, r: 4 }}
                 name="Performance"
                 activeDot={{ r: 6, stroke: '#F59E0B', strokeWidth: 2 }}
+                animationDuration={1500}
+                animationEasing="ease-in-out"
+                animationBegin={600}
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </motion.div>
       </div>
     </motion.div>
   );

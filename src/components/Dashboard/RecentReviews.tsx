@@ -70,17 +70,32 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+    >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+          <motion.div 
+            className="flex items-center"
+            whileHover={{ x: 5 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             <CheckCircle className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
-            Recent Reviews
-          </h3>
-          <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Recent Reviews
+            </h3>
+          </motion.div>
+          <motion.button 
+            className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center"
+            whileHover={{ x: 5 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             View all
             <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
+          </motion.button>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           Latest code review activities
@@ -102,26 +117,38 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
+              whileHover={{ 
+                backgroundColor: "rgba(243, 244, 246, 0.5)",
+                dark: { backgroundColor: "rgba(55, 65, 81, 0.3)" }
+              }}
               className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  {getStatusIcon(review.status)}
+                  <motion.div
+                    whileHover={{ scale: 1.2, rotate: 10 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    {getStatusIcon(review.status)}
+                  </motion.div>
                   
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white">
                       Repository Review #{review.id.slice(-6)}
                     </h4>
                     <div className="flex items-center space-x-4 mt-1">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        review.status === 'completed' 
-                          ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                          : review.status === 'running'
-                          ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
-                      }`}>
+                      <motion.span 
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          review.status === 'completed' 
+                            ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                            : review.status === 'running'
+                            ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
+                        }`}
+                        whileHover={{ scale: 1.1 }}
+                      >
                         {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
-                      </span>
+                      </motion.span>
                       <span className="text-sm text-gray-600 dark:text-gray-400">
                         {formatDistanceToNow(review.startedAt, { addSuffix: true })}
                       </span>
@@ -141,12 +168,17 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
                     </div>
                   )}
                   
-                  <Link 
-                    to={`/review/${review.id}/results`}
-                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  <motion.div
+                    whileHover={{ scale: 1.2, rotate: 10 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
+                    <Link 
+                      to={`/review/${review.id}/results`}
+                      className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  </motion.div>
                 </div>
               </div>
 
@@ -161,7 +193,7 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
                       className="bg-blue-600 h-2 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${review.progress}%` }}
-                      transition={{ duration: 0.5 }}
+                      transition={{ duration: 1, ease: "easeInOut" }}
                     />
                   </div>
                 </div>
@@ -172,15 +204,20 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
       </div>
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <Link 
-          to="/review"
-          className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center"
+        <motion.div
+          whileHover={{ x: 5 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
-          View all reviews
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </Link>
+          <Link 
+            to="/review"
+            className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center"
+          >
+            View all reviews
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Link>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

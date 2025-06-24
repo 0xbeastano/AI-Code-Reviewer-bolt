@@ -75,17 +75,34 @@ const SecurityAlerts: React.FC<SecurityAlertsProps> = ({ alerts = [] }) => {
   const criticalCount = displayAlerts.filter(alert => alert.type === 'critical').length;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+    >
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+          <motion.div 
+            className="flex items-center"
+            whileHover={{ x: 5 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             <Shield className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
-            Security Alerts
-          </h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Security Alerts
+            </h3>
+          </motion.div>
           {criticalCount > 0 && (
-            <span className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 rounded-full">
+            <motion.span 
+              className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 rounded-full"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              whileHover={{ scale: 1.1 }}
+            >
               {criticalCount} Critical
-            </span>
+            </motion.span>
           )}
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -106,10 +123,19 @@ const SecurityAlerts: React.FC<SecurityAlertsProps> = ({ alerts = [] }) => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
+              whileHover={{ 
+                x: 5,
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+              }}
               className={`p-4 border-l-4 ${getAlertColor(alert.type)}`}
             >
               <div className="flex items-start space-x-3">
-                {getAlertIcon(alert.type)}
+                <motion.div
+                  whileHover={{ scale: 1.2, rotate: 10 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                >
+                  {getAlertIcon(alert.type)}
+                </motion.div>
                 
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-gray-900 dark:text-white">
@@ -134,12 +160,16 @@ const SecurityAlerts: React.FC<SecurityAlertsProps> = ({ alerts = [] }) => {
       </div>
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <button className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center">
+        <motion.button 
+          className="w-full text-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center justify-center"
+          whileHover={{ x: 5 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
           View all alerts
           <ChevronRight className="w-4 h-4 ml-1" />
-        </button>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

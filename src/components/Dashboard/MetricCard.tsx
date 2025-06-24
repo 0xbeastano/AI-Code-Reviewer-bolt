@@ -53,19 +53,34 @@ const MetricCard: React.FC<MetricCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2, scale: 1.02 }}
+      whileHover={{ y: -5, scale: 1.02 }}
       className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 transition-all hover:shadow-xl cursor-pointer"
     >
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg border ${colorClasses[color]}`}>
+        <motion.div 
+          className={`p-3 rounded-lg border ${colorClasses[color]}`}
+          whileHover={{ rotate: 10 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
           <Icon className="w-6 h-6" />
-        </div>
+        </motion.div>
         
         <div className="flex items-center space-x-2">
           {badge && (
-            <span className="text-xs px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full font-medium">
+            <motion.span 
+              className="text-xs px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full font-medium"
+              animate={{ 
+                scale: [1, 1.1, 1],
+                rotate: [-1, 1, -1]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                repeatType: "reverse"
+              }}
+            >
               {badge}
-            </span>
+            </motion.span>
           )}
           {trend && (
             <div className={`flex items-center space-x-1 text-sm font-medium ${
@@ -84,9 +99,14 @@ const MetricCard: React.FC<MetricCardProps> = ({
       </div>
       
       <div>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+        <motion.p 
+          className="text-2xl font-bold text-gray-900 dark:text-white mb-1"
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
           {value}
-        </p>
+        </motion.p>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {title}
         </p>

@@ -94,7 +94,19 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
             <Brain className="w-8 h-8 text-primary-600 dark:text-primary-400 mr-3" />
           </motion.div>
           ChatGPT-4 Analysis in Progress
-          <Sparkles className="w-6 h-6 text-yellow-500 ml-3" />
+          <motion.div
+            animate={{ 
+              scale: [1, 1.2, 1],
+              rotate: [0, 5, 0]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          >
+            <Sparkles className="w-6 h-6 text-yellow-500 ml-3" />
+          </motion.div>
         </motion.h2>
         <p className="text-gray-600 dark:text-gray-400 text-lg">
           Advanced AI-powered analysis using OpenAI's GPT-4 model for comprehensive code review
@@ -114,10 +126,28 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}
+            whileHover={{ 
+              y: -5,
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+            }}
             className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg"
           >
             <div className="text-center">
-              <div className="text-2xl mb-1">{stat.icon}</div>
+              <motion.div 
+                className="text-2xl mb-1"
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 5, 0]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  delay: index * 0.5
+                }}
+              >
+                {stat.icon}
+              </motion.div>
               <motion.div 
                 className="text-2xl font-bold text-gray-900 dark:text-white"
                 key={stat.value}
@@ -138,6 +168,10 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
         className="mb-8 p-6 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 rounded-xl shadow-lg border border-primary-200 dark:border-primary-800"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        whileHover={{ 
+          y: -5,
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+        }}
       >
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -152,6 +186,7 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
               key={Math.round(animatedProgress)}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
               {Math.round(animatedProgress)}%
             </motion.div>
@@ -188,7 +223,11 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ 
+                scale: 1.02,
+                x: 5,
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+              }}
             >
               <div className="flex items-center space-x-4">
                 <motion.div 
@@ -199,8 +238,15 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
                       ? 'bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-400'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                   }`}
-                  animate={isActive ? { scale: [1, 1.1, 1] } : { scale: 1 }}
-                  transition={{ duration: 2, repeat: isActive ? Infinity : 0 }}
+                  animate={isActive ? { 
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, 0]
+                  } : { scale: 1 }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: isActive ? Infinity : 0,
+                    repeatType: "reverse"
+                  }}
                 >
                   <step.icon className="w-6 h-6" />
                 </motion.div>
@@ -241,7 +287,8 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
                       {isCompleted && (
                         <motion.div
                           initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
+                          animate={{ scale: 1, rotate: [0, 360] }}
+                          transition={{ type: "spring", stiffness: 400, damping: 10 }}
                           className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center"
                         >
                           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -276,9 +323,48 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
           ChatGPT-4 analysis typically takes 30 seconds to 2 minutes depending on codebase complexity
         </p>
         <div className="flex items-center justify-center mt-2 space-x-4 text-xs text-gray-400">
-          <span>🔒 Secure processing</span>
-          <span>⚡ Real-time analysis</span>
-          <span>🎯 99.2% accuracy</span>
+          <motion.span 
+            animate={{ 
+              scale: [1, 1.1, 1],
+              y: [0, -2, 0]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              repeatType: "reverse",
+              delay: 0
+            }}
+          >
+            🔒 Secure processing
+          </motion.span>
+          <motion.span 
+            animate={{ 
+              scale: [1, 1.1, 1],
+              y: [0, -2, 0]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              repeatType: "reverse",
+              delay: 0.5
+            }}
+          >
+            ⚡ Real-time analysis
+          </motion.span>
+          <motion.span 
+            animate={{ 
+              scale: [1, 1.1, 1],
+              y: [0, -2, 0]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              repeatType: "reverse",
+              delay: 1
+            }}
+          >
+            🎯 99.2% accuracy
+          </motion.span>
         </div>
       </motion.div>
     </div>
