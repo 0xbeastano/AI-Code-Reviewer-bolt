@@ -4,6 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Demo mode flag
+let demoMode = false;
+
 // Check if Supabase is properly configured
 const isSupabaseConfigured = supabaseUrl && 
   supabaseAnonKey && 
@@ -15,6 +18,11 @@ let supabaseClient = null;
 
 try {
   if (isSupabaseConfigured) {
+    console.log('🔍 Attempting to initialize Supabase with:', { 
+      url: supabaseUrl?.substring(0, 15) + '...',
+      keyLength: supabaseAnonKey?.length || 0
+    });
+    
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
@@ -24,14 +32,23 @@ try {
     });
     console.log('🚀 Supabase client initialized successfully');
   } else {
-    console.error('⚠️ Supabase configuration missing or invalid');
+    console.warn('⚠️ Supabase configuration missing or invalid, enabling demo mode');
+    demoMode = true;
   }
 } catch (error) {
   console.error('⚠️ Failed to initialize Supabase client:', error);
+  demoMode = true;
 }
 
 // Export the client
 export const supabase = supabaseClient;
+
+// Demo mode functions
+export const isDemoMode = () => demoMode;
+export const enableDemoMode = () => {
+  demoMode = true;
+  console.log('🔄 Demo mode enabled');
+};
 
 // Database types
 export type CodeReview = {

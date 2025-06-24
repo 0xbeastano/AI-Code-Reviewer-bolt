@@ -6,6 +6,7 @@ import { SignupForm } from './SignupForm';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { useAuth } from './AuthProvider';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { isDemoMode } from '../../lib/supabase';
 
 type AuthMode = 'login' | 'signup' | 'reset';
 
@@ -136,6 +137,28 @@ export const AuthPage: React.FC = () => {
       {/* Right Side - Auth Forms */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
+          {isDemoMode() && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+            >
+              <div className="flex items-center">
+                <div className="flex-shrink-0 text-yellow-600 dark:text-yellow-400 mr-3">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                    Demo Mode Active
+                  </h3>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                    The application is running in demo mode. All authentication features will be simulated.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           <AnimatePresence mode="wait">
             {mode === 'login' && (
               <LoginForm

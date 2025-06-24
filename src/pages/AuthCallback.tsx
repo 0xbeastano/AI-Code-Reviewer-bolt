@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, isDemoMode } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 export const AuthCallback: React.FC = () => {
@@ -11,6 +11,21 @@ export const AuthCallback: React.FC = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        if (isDemoMode()) {
+          // In demo mode, simulate successful authentication
+          toast.success('Successfully signed in with demo account!');
+          const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
+          sessionStorage.removeItem('auth_return_to');
+          navigate(returnTo);
+          return;
+        }
+
+        if (!supabase) {
+          toast.error('Authentication service not available');
+          navigate('/auth');
+          return;
+        }
+
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
