@@ -152,20 +152,20 @@ const HeroSection: React.FC = () => {
                 <div className="p-4 font-mono text-sm">
                   <pre className="language-javascript">
                     <code className="text-gray-300">
-                      <span className="text-blue-400">function</span> <span className="text-green-400">processUserData</span>(userData) {'{'}
+                      <span className="text-blue-400">function</span> <span className="text-green-400">processUserData</span>(userData) &lbrace;
                       <br />
                       <span className="text-red-400">  // Security vulnerability detected</span>
                       <br />
-                      <span className="text-yellow-400">  const query = `SELECT * FROM users WHERE id = ${'{'}userData.id{'}'}`;</span>
+                      <span className="text-yellow-400">  const query = `SELECT * FROM users WHERE id = $&lbrace;userData.id&rbrace;`;</span>
                       <br />
                       <br />
                       <span className="text-red-400">  // Performance issue detected</span>
                       <br />
-                      <span className="text-yellow-400">  for (let i = 0; i < userData.items.length; i++) {'{'}</span>
+                      <span className="text-yellow-400">  for (let i = 0; i &lt; userData.items.length; i++) &lbrace;</span>
                       <br />
                       <span className="text-yellow-400">    processItem(userData.items[i]);</span>
                       <br />
-                      <span className="text-yellow-400">  {'}'}</span>
+                      <span className="text-yellow-400">  &rbrace;</span>
                       <br />
                       <br />
                       <span className="text-red-400">  // Code quality issue detected</span>
@@ -174,7 +174,7 @@ const HeroSection: React.FC = () => {
                       <br />
                       <span className="text-yellow-400">  return result;</span>
                       <br />
-                      {'}'};
+                      &rbrace;;
                     </code>
                   </pre>
                 </div>
