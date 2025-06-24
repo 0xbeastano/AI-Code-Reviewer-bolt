@@ -79,12 +79,62 @@ class CodeReviewService {
       
       return {
         metrics,
-        trends: this.generateTrendsFromReviews(reviews || [], daysAgo)
+        trends: this.generateTrendsFromReviews(reviews || [], daysAgo),
+        recentReviews: this.formatRecentReviews(reviews || [])
       };
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error);
       throw error;
     }
+  }
+
+  private formatRecentReviews(reviews: SupabaseCodeReview[]): any[] {
+    // Group reviews by their root folder to simulate repository reviews
+    const reviewsByGroup = new Map<string, SupabaseCodeReview[]>();
+    
+    reviews.forEach(review => {
+      const rootFolder = review.file_path.split('/')[0];
+      if (!reviewsByGroup.has(rootFolder)) {
+        reviewsByGroup.set(rootFolder, []);
+      }
+      reviewsByGroup.get(rootFolder)?.push(review);
+    });
+    
+    // Convert to the expected format
+    return Array.from(reviewsByGroup.entries()).map(([group, groupReviews]) => {
+      const latestReview = groupReviews.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )[0];
+      
+      // Calculate summary metrics
+      let issuesFound = 0;
+      let qualityScore = 0;
+      let reviewsWithMetrics = 0;
+      
+      groupReviews.forEach(review => {
+        if (review.analysis_results) {
+          if (review.analysis_results.issues) {
+            issuesFound += review.analysis_results.issues.length;
+          }
+          if (review.analysis_results.metrics?.maintainability) {
+            qualityScore += review.analysis_results.metrics.maintainability;
+            reviewsWithMetrics++;
+          }
+        }
+      });
+      
+      return {
+        id: latestReview.id,
+        status: latestReview.status,
+        startedAt: new Date(latestReview.created_at),
+        progress: latestReview.status === 'completed' ? 100 : 
+                 latestReview.status === 'running' ? 50 : 0,
+        summary: {
+          issuesFound,
+          qualityScore: reviewsWithMetrics ? Math.round(qualityScore / reviewsWithMetrics) : 0
+        }
+      };
+    }).slice(0, 5); // Return only the 5 most recent reviews
   }
 
   private calculateMetricsFromReviews(reviews: SupabaseCodeReview[]): any {
@@ -106,8 +156,8 @@ class CodeReviewService {
         if (results.metrics?.qualityGain) {
           totalQualityGain += results.metrics.qualityGain;
         }
-        if (results.metrics?.performanceGain) {
-          totalPerformanceGain += results.metrics.performanceGain;
+        if (results.metrics?.performance) {
+          totalPerformanceGain += results.metrics.performance;
         }
         if (results.summary?.issuesFixed) {
           totalIssuesFixed += results.summary.issuesFixed;
@@ -365,9 +415,10 @@ class CodeReviewService {
       
       for (let i = 0; i < totalFiles; i++) {
         const file = codebase.files[i];
+        let reviewId = null;
         
         try {
-          // Update status to running if using Supabase
+          // Find or create review record if using Supabase
           if (!isDemoMode && supabase && user) {
             // Find the review for this file
             const { data: reviews } = await supabase
@@ -380,13 +431,31 @@ class CodeReviewService {
               .limit(1);
             
             if (reviews && reviews.length > 0) {
-              const reviewId = reviews[0].id;
+              reviewId = reviews[0].id;
               
               // Update status to running
               await supabase
                 .from('code_reviews')
                 .update({ status: 'running' })
                 .eq('id', reviewId);
+            } else {
+              // Create a new review record
+              const { data, error } = await supabase
+                .from('code_reviews')
+                .insert({
+                  user_id: user.id,
+                  file_path: file.path,
+                  original_content: file.content,
+                  status: 'running'
+                })
+                .select()
+                .single();
+                
+              if (error) {
+                throw error;
+              }
+              
+              reviewId = data.id;
             }
           }
           
@@ -395,7 +464,8 @@ class CodeReviewService {
             file.content, 
             file.language, 
             file.path, 
-            false
+            false,
+            config.model
           );
           
           const result: AnalysisResult = {
@@ -414,58 +484,29 @@ class CodeReviewService {
           }
           
           // Store results in Supabase if not in demo mode
-          if (!isDemoMode && supabase && user) {
-            // Find the review for this file
-            const { data: reviews } = await supabase
+          if (!isDemoMode && supabase && user && reviewId) {
+            // Update with analysis results
+            await supabase
               .from('code_reviews')
-              .select('*')
-              .eq('user_id', user.id)
-              .eq('file_path', file.path)
-              .eq('status', 'running')
-              .order('created_at', { ascending: false })
-              .limit(1);
-            
-            if (reviews && reviews.length > 0) {
-              const reviewId = reviews[0].id;
-              
-              // Update with analysis results
-              await supabase
-                .from('code_reviews')
-                .update({
-                  analysis_results: result,
-                  status: 'completed',
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', reviewId);
-            }
+              .update({
+                analysis_results: result,
+                status: 'completed',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', reviewId);
           }
         } catch (error) {
           console.error(`Analysis failed for ${file.path}:`, error);
           
           // Update status to failed if using Supabase
-          if (!isDemoMode && supabase && user) {
-            // Find the review for this file
-            const { data: reviews } = await supabase
+          if (!isDemoMode && supabase && user && reviewId) {
+            await supabase
               .from('code_reviews')
-              .select('*')
-              .eq('user_id', user.id)
-              .eq('file_path', file.path)
-              .eq('status', 'running')
-              .order('created_at', { ascending: false })
-              .limit(1);
-            
-            if (reviews && reviews.length > 0) {
-              const reviewId = reviews[0].id;
-              
-              // Update status to failed
-              await supabase
-                .from('code_reviews')
-                .update({
-                  status: 'failed',
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', reviewId);
-            }
+              .update({
+                status: 'failed',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', reviewId);
           }
         }
       }
