@@ -1,13 +1,9 @@
-import { supabase, isDemoMode, CodeReview as SupabaseCodeReview } from '../lib/supabase';
+import { supabase, CodeReview as SupabaseCodeReview } from '../lib/supabase';
 import { AIService } from './aiService';
 import { 
   Repository, 
   CodeReviewRequest, 
-  CodeReviewResult,
-  AnalysisConfig,
-  SecurityScanResult,
-  PerformanceAnalysis,
-  QualityMetrics
+  CodeReviewResult
 } from '../types/codeReview';
 import { CodeFile, Codebase, AnalysisResult } from '../types';
 import { authService } from '../lib/auth';
@@ -19,32 +15,6 @@ class CodeReviewService {
 
   // Dashboard Metrics
   async getDashboardMetrics(timeRange: string = '7d'): Promise<any> {
-    if (isDemoMode) {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate realistic metrics based on time range
-      const multiplier = timeRange === '1d' ? 0.5 : 
-                        timeRange === '7d' ? 1 : 
-                        timeRange === '30d' ? 3 : 5;
-      
-      return {
-        metrics: {
-          repoCount: Math.floor(Math.random() * 5) + 3,
-          securityScore: Math.floor(Math.random() * 10) + 90,
-          qualityGain: Math.floor(Math.random() * 15) + 25,
-          performanceGain: Math.floor(Math.random() * 10) + 20,
-          bugsFixed: Math.floor(Math.random() * 500) + (1000 * multiplier),
-          linesRefactored: Math.floor(Math.random() * 5000) + (5000 * multiplier)
-        },
-        trends: {
-          quality: [82, 84, 85, 87, 86, 89, 87],
-          security: [88, 90, 92, 91, 93, 94, 95],
-          performance: [75, 77, 79, 81, 80, 83, 85]
-        }
-      };
-    }
-    
     try {
       if (!supabase) {
         throw new Error('Supabase not configured');
@@ -266,58 +236,6 @@ class CodeReviewService {
 
   // Repository Management
   async getRepositories(): Promise<Repository[]> {
-    if (isDemoMode) {
-      // Return mock repositories
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return [
-        {
-          id: '1',
-          name: 'e-commerce-platform',
-          fullName: 'user/e-commerce-platform',
-          provider: 'github',
-          url: 'https://github.com/user/e-commerce-platform',
-          defaultBranch: 'main',
-          language: 'TypeScript',
-          isPrivate: false,
-          lastSync: new Date(),
-          status: 'active',
-          webhookConfigured: true,
-          analysisConfig: {} as any,
-          metrics: {} as any
-        },
-        {
-          id: '2',
-          name: 'payment-service',
-          fullName: 'user/payment-service',
-          provider: 'github',
-          url: 'https://github.com/user/payment-service',
-          defaultBranch: 'main',
-          language: 'Python',
-          isPrivate: true,
-          lastSync: new Date(),
-          status: 'active',
-          webhookConfigured: true,
-          analysisConfig: {} as any,
-          metrics: {} as any
-        },
-        {
-          id: '3',
-          name: 'mobile-app',
-          fullName: 'user/mobile-app',
-          provider: 'github',
-          url: 'https://github.com/user/mobile-app',
-          defaultBranch: 'main',
-          language: 'React Native',
-          isPrivate: true,
-          lastSync: new Date(),
-          status: 'active',
-          webhookConfigured: false,
-          analysisConfig: {} as any,
-          metrics: {} as any
-        }
-      ];
-    }
-    
     try {
       if (!supabase) {
         throw new Error('Supabase not configured');
@@ -351,8 +269,8 @@ class CodeReviewService {
         lastSync: new Date(repo.last_sync),
         status: repo.status as 'active' | 'syncing' | 'error' | 'disconnected',
         webhookConfigured: repo.webhook_configured,
-        analysisConfig: {} as any, // We'll need to add this to the schema later
-        metrics: {} as any // We'll need to add this to the schema later
+        analysisConfig: {} as any,
+        metrics: {} as any
       }));
     } catch (error) {
       console.error('Error fetching repositories:', error);
@@ -362,11 +280,6 @@ class CodeReviewService {
 
   // Code Review Operations
   async initiateCodeReview(codebase: Codebase, config: any): Promise<string> {
-    if (isDemoMode) {
-      // In demo mode, just return a mock review ID
-      return `review-${Date.now()}`;
-    }
-
     try {
       if (!supabase) {
         throw new Error('Supabase not configured');
@@ -419,7 +332,7 @@ class CodeReviewService {
         
         try {
           // Find or create review record if using Supabase
-          if (!isDemoMode && supabase && user) {
+          if (supabase && user) {
             // Find the review for this file
             const { data: reviews } = await supabase
               .from('code_reviews')
@@ -483,8 +396,8 @@ class CodeReviewService {
             onProgress(((i + 1) / totalFiles) * 100);
           }
           
-          // Store results in Supabase if not in demo mode
-          if (!isDemoMode && supabase && user && reviewId) {
+          // Store results in Supabase
+          if (supabase && user && reviewId) {
             // Update with analysis results
             await supabase
               .from('code_reviews')
@@ -499,7 +412,7 @@ class CodeReviewService {
           console.error(`Analysis failed for ${file.path}:`, error);
           
           // Update status to failed if using Supabase
-          if (!isDemoMode && supabase && user && reviewId) {
+          if (supabase && user && reviewId) {
             await supabase
               .from('code_reviews')
               .update({
@@ -519,55 +432,6 @@ class CodeReviewService {
   }
 
   async getReviewStatus(reviewId: string): Promise<CodeReviewResult> {
-    if (isDemoMode) {
-      // Return mock review status
-      return {
-        id: reviewId,
-        repositoryId: '1',
-        status: 'completed',
-        progress: 100,
-        startedAt: new Date(Date.now() - 3600000), // 1 hour ago
-        completedAt: new Date(),
-        duration: 3600, // 1 hour in seconds
-        summary: {
-          totalFiles: 10,
-          analyzedFiles: 10,
-          linesOfCode: 1500,
-          issuesFound: 23,
-          issuesFixed: 18,
-          securityVulnerabilities: 5,
-          performanceIssues: 8,
-          qualityScore: 87,
-          improvementScore: 15,
-          estimatedSavings: {
-            time: 8, // hours
-            cost: 1200 // USD
-          }
-        },
-        findings: [],
-        suggestions: [],
-        metrics: {
-          timestamp: new Date(),
-          overall: 87,
-          security: 92,
-          performance: 85,
-          maintainability: 88,
-          reliability: 90,
-          testCoverage: 75,
-          complexity: 65,
-          duplication: 12,
-          documentation: 80,
-          trends: {
-            period: '30d',
-            change: 8,
-            direction: 'up'
-          }
-        },
-        reports: [],
-        errors: []
-      };
-    }
-
     try {
       if (!supabase) {
         throw new Error('Supabase not configured');
@@ -652,48 +516,7 @@ class CodeReviewService {
 
   // Quality Trends
   async getQualityTrends(timeRange: string = '7d'): Promise<any> {
-    if (isDemoMode) {
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 900));
-      
-      // Generate trend data based on time range
-      const dataPoints = timeRange === '1d' ? 24 : 
-                        timeRange === '7d' ? 7 : 
-                        timeRange === '30d' ? 30 : 90;
-      
-      const qualityData = [];
-      const securityData = [];
-      const performanceData = [];
-      
-      let qualityBase = 80 + Math.random() * 5;
-      let securityBase = 85 + Math.random() * 5;
-      let performanceBase = 75 + Math.random() * 5;
-      
-      for (let i = 0; i < dataPoints; i++) {
-        // Add some realistic variation
-        qualityBase += (Math.random() - 0.5) * 2;
-        securityBase += (Math.random() - 0.5) * 2;
-        performanceBase += (Math.random() - 0.5) * 2;
-        
-        // Ensure values stay within reasonable bounds
-        qualityBase = Math.max(75, Math.min(95, qualityBase));
-        securityBase = Math.max(80, Math.min(98, securityBase));
-        performanceBase = Math.max(70, Math.min(90, performanceBase));
-        
-        qualityData.push(Math.round(qualityBase));
-        securityData.push(Math.round(securityBase));
-        performanceData.push(Math.round(performanceBase));
-      }
-      
-      return {
-        quality: qualityData,
-        security: securityData,
-        performance: performanceData
-      };
-    }
-    
     // This would be implemented with actual Supabase queries in a real app
-    // For now, we'll just return the same mock data
     return this.getDashboardMetrics(timeRange).then(data => data.trends);
   }
 }

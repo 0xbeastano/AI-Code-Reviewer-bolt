@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { authService } from '../lib/auth';
 
 export class AIService {
@@ -44,11 +44,6 @@ export class AIService {
     const user = authService.getCurrentUser();
 
     try {
-      // If we're in demo mode or Supabase is not configured, use the fallback analysis
-      if (isDemoMode || !supabase) {
-        return this.getFallbackAnalysis(code, language, filePath, generateImprovedCode);
-      }
-
       // Get the Supabase URL for the Edge Function
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl) {
@@ -107,120 +102,22 @@ export class AIService {
       return result;
     } catch (error) {
       console.error(`${selectedModel.toUpperCase()} analysis failed:`, error);
-      // Fallback analysis
-      return this.getFallbackAnalysis(code, language, filePath, generateImprovedCode);
+      
+      // Return a basic structure with empty arrays
+      return {
+        issues: [],
+        suggestions: [],
+        metrics: {
+          complexity: 50,
+          maintainability: 75,
+          security: 80,
+          performance: 70,
+          coverage: 60,
+          duplicateLines: 0,
+          linesOfCode: code.split('\n').length
+        }
+      };
     }
-  }
-
-  private getFallbackAnalysis(code: string, language: string, filePath: string, generateImprovedCode: boolean = true): {
-    issues: any[];
-    suggestions: any[];
-    metrics: any;
-    improvedCode?: string;
-  } {
-    const lines = code.split('\n');
-    const codeLength = code.length;
-    
-    // Generate basic issues based on code content
-    const issues = [];
-    const suggestions = [];
-    
-    // Security analysis
-    if (code.includes('eval(') || code.includes('innerHTML') || code.includes('document.write')) {
-      issues.push({
-        id: 'security-xss-1',
-        type: 'security',
-        severity: 'critical',
-        line: Math.min(10, lines.length),
-        column: 1,
-        message: `Potential XSS vulnerability detected`,
-        rule: 'no-unsafe-eval',
-        suggestion: 'Use safer alternatives like JSON.parse() or textContent'
-      });
-    }
-    
-    // Performance analysis
-    if (code.includes('for (') && code.includes('.length')) {
-      issues.push({
-        id: 'performance-loop-1',
-        type: 'performance',
-        severity: 'medium',
-        line: Math.min(15, lines.length),
-        column: 1,
-        message: `Loop optimization opportunity identified`,
-        rule: 'no-length-in-loop',
-        suggestion: 'Cache the length value before the loop for better performance'
-      });
-    }
-    
-    // Code quality
-    if (language === 'javascript' && code.includes('var ')) {
-      issues.push({
-        id: 'style-var-1',
-        type: 'style',
-        severity: 'low',
-        line: Math.min(5, lines.length),
-        column: 1,
-        message: `Modern JavaScript practices recommended`,
-        rule: 'no-var',
-        suggestion: 'Replace var with let or const for better scoping'
-      });
-    }
-    
-    // Generate suggestions
-    suggestions.push({
-      id: 'suggestion-1',
-      type: 'style',
-      priority: 'medium',
-      description: `Code modernization suggested`,
-      before: 'function example() {',
-      after: 'function example(): void {',
-      impact: 'Better code readability and type safety'
-    });
-    
-    if (language === 'python') {
-      suggestions.push({
-        id: 'suggestion-2',
-        type: 'documentation',
-        priority: 'high',
-        description: `Enhanced documentation patterns`,
-        before: 'def process_data(data):',
-        after: 'def process_data(data: List[Dict]) -> Dict:\n    """Process input data and return results."""',
-        impact: 'Improved code documentation and maintainability'
-      });
-    }
-    
-    // Calculate metrics
-    const baseComplexity = Math.min(100, Math.max(10, (code.match(/if|for|while|switch|case/g) || []).length * 5 + 20));
-    const complexity = Math.round(baseComplexity);
-    const maintainability = Math.max(60, Math.round(100 - complexity + (code.includes('//') || code.includes('#') ? 10 : 0)));
-    const security = Math.max(70, Math.round(95 - issues.filter(i => i.type === 'security').length * 10));
-    const performance = Math.max(65, Math.round(90 - issues.filter(i => i.type === 'performance').length * 5));
-    
-    const result: {
-      issues: any[];
-      suggestions: any[];
-      metrics: any;
-      improvedCode?: string;
-    } = {
-      issues,
-      suggestions,
-      metrics: {
-        complexity,
-        maintainability,
-        security,
-        performance,
-        coverage: Math.floor(Math.random() * 40) + 60,
-        duplicateLines: Math.floor(codeLength / 1000),
-        linesOfCode: lines.filter(line => line.trim().length > 0).length
-      }
-    };
-
-    if (generateImprovedCode) {
-      result.improvedCode = code;
-    }
-
-    return result;
   }
 
   async generateDocumentation(code: string, language: string, modelId?: string): Promise<string> {
@@ -228,11 +125,6 @@ export class AIService {
     const user = authService.getCurrentUser();
 
     try {
-      // If we're in demo mode or Supabase is not configured, return the original code
-      if (isDemoMode || !supabase) {
-        return code;
-      }
-
       // Get the Supabase URL for the Edge Function
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl) {
@@ -273,7 +165,6 @@ export class AIService {
     testSuggestions: string[];
   }> {
     // This could also be moved to an Edge Function in the future
-    // For now, we'll just return a simple result
     return {
       isEquivalent: true,
       differences: [],

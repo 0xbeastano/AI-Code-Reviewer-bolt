@@ -36,7 +36,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ onSwitchTo
       const { error } = await resetPassword(data.email);
       
       if (error) {
-        toast.error(error);
+        toast.error(error.message);
       } else {
         setEmailSent(true);
         toast.success('Password reset email sent!');

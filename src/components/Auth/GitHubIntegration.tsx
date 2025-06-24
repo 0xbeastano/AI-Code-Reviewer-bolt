@@ -4,7 +4,7 @@ import { Github, GitBranch, Lock, Users, Star, ExternalLink, RefreshCw, CheckCir
 import { useAuth } from './AuthProvider';
 import { authService } from '../../lib/auth';
 import toast from 'react-hot-toast';
-import { supabase, isDemoMode } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 interface Repository {
   id: number;
@@ -42,8 +42,8 @@ export const GitHubIntegration: React.FC = () => {
       } else {
         setRepositories(repos);
         
-        // If not in demo mode, save repositories to Supabase
-        if (!isDemoMode && supabase && user) {
+        // Save repositories to Supabase
+        if (supabase && user) {
           await saveRepositoriesToSupabase(repos);
         }
         
@@ -92,18 +92,13 @@ export const GitHubIntegration: React.FC = () => {
 
   const handleConnectGitHub = async () => {
     try {
-      const { url, error } = await authService.signInWithGitHub();
+      const { error } = await authService.signInWithGitHub();
       
       if (error) {
         toast.error(error);
-      } else if (url) {
+      } else {
         // Store current location for redirect after auth
         sessionStorage.setItem('auth_return_to', window.location.pathname);
-        window.location.href = url;
-      } else if (isDemoMode) {
-        // In demo mode, the session is created immediately
-        toast.success('GitHub connected successfully!');
-        fetchRepositories();
       }
     } catch (error) {
       toast.error('Failed to connect GitHub');

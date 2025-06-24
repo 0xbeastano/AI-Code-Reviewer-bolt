@@ -7,7 +7,6 @@ import { Eye, EyeOff, Mail, Lock, User, Github, Chrome, Loader2, CheckCircle } f
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { isDemoMode } from '../../lib/supabase';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -51,16 +50,16 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
     try {
-      const { user, error } = await signUp(data.email, data.password, data.name);
+      const { error } = await signUp(data.email, data.password);
       
       if (error) {
-        if (error.includes('verification link')) {
+        if (error.message.includes('verification link')) {
           setEmailSent(true);
           toast.success('Verification email sent! Please check your inbox.');
         } else {
-          toast.error(error);
+          toast.error(error.message);
         }
-      } else if (user) {
+      } else {
         toast.success('Account created successfully!');
         navigate('/dashboard');
       }
@@ -74,18 +73,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const handleGitHubSignIn = async () => {
     setOauthLoading('github');
     try {
-      const { url, error } = await signInWithGitHub();
+      const { error } = await signInWithGitHub();
       
       if (error) {
-        toast.error(error);
-      } else if (url) {
+        toast.error(error.message);
+      } else {
         // Store current location for redirect after auth
         sessionStorage.setItem('auth_return_to', '/dashboard');
-        window.location.href = url;
-      } else if (isDemoMode) {
-        // In demo mode, the session is created immediately
-        toast.success('GitHub authentication successful!');
-        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('Failed to sign up with GitHub');
@@ -97,18 +91,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const handleGoogleSignIn = async () => {
     setOauthLoading('google');
     try {
-      const { url, error } = await signInWithGoogle();
+      const { error } = await signInWithGoogle();
       
       if (error) {
-        toast.error(error);
-      } else if (url) {
+        toast.error(error.message);
+      } else {
         // Store current location for redirect after auth
         sessionStorage.setItem('auth_return_to', '/dashboard');
-        window.location.href = url;
-      } else if (isDemoMode) {
-        // In demo mode, the session is created immediately
-        toast.success('Google authentication successful!');
-        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('Failed to sign up with Google');

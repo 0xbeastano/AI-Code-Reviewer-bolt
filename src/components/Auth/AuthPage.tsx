@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Code2, Shield, Zap, Star, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
+import { Brain, Code2, Shield, Zap, Star, ArrowRight } from 'lucide-react';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { ResetPasswordForm } from './ResetPasswordForm';
@@ -12,7 +12,7 @@ type AuthMode = 'login' | 'signup' | 'reset';
 export const AuthPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>('login');
-  const { isDemoMode, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -136,44 +136,6 @@ export const AuthPage: React.FC = () => {
       {/* Right Side - Auth Forms */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          {/* Production Mode Notice */}
-          {!isDemoMode && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
-            >
-              <div className="flex items-start space-x-3">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-green-800 dark:text-green-200">Production Mode Active</h4>
-                  <p className="text-sm text-green-600 dark:text-green-300 mt-1">
-                    Connected to Supabase backend. Your data will be securely stored and you can use real OAuth providers.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Demo Mode Notice */}
-          {isDemoMode && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
-            >
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-800 dark:text-blue-200">Demo Mode</h4>
-                  <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
-                    Authentication is running in demo mode. You can sign in with any email/password or use OAuth buttons to explore the app.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
           <AnimatePresence mode="wait">
             {mode === 'login' && (
               <LoginForm
