@@ -136,7 +136,7 @@ const ConversionSection: React.FC = () => {
                     </motion.button>
                     
                     <p className="text-xs text-center text-blue-200 mt-3">
-                      By signing up, you agree to our <a href="/terms" className="underline">Terms of Service</a> and <a href="/privacy" className="underline">Privacy Policy</a>
+                      By signing up, you agree to our <a href="/terms" className="underline">Terms of Service</a> and <a href="/privacy" className=\"underline">Privacy Policy</a>
                     </p>
                   </div>
                 </form>
