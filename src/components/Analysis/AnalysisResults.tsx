@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { FileText, AlertTriangle, CheckCircle, Clock, TrendingUp, Download, Copy, Check } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { FileText, AlertTriangle, CheckCircle, Clock, TrendingUp, Download, Copy, Check, Shield } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AnalysisResult, Issue, QualityMetrics } from '../../types';
 import CodeEditor from '../CodeEditor/CodeEditor';
 
