@@ -20,6 +20,7 @@ import LandingPage from './pages/LandingPage';
 import PricingPage from './pages/PricingPage';
 import DocumentationPage from './pages/DocumentationPage';
 import ReviewResults from './pages/ReviewResults';
+import DeployPage from './pages/DeployPage';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -93,6 +94,13 @@ function App() {
                         <ProtectedRoute>
                           <Layout>
                             <Settings />
+                          </Layout>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/deploy" element={
+                        <ProtectedRoute>
+                          <Layout>
+                            <DeployPage />
                           </Layout>
                         </ProtectedRoute>
                       } />

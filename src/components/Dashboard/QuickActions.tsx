@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, Plus, Settings, Download, GitBranch, Zap, ChevronRight } from 'lucide-react';
+import { Play, Plus, Settings, Download, GitBranch, Zap, ChevronRight, Cloud } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Repository {
@@ -50,12 +50,12 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories = [] }) => {
       }
     },
     {
-      id: 'export-reports',
-      title: 'Export Reports',
-      description: 'Download analysis reports',
-      icon: Download,
+      id: 'deploy-app',
+      title: 'Deploy Application',
+      description: 'Deploy your app to Netlify',
+      icon: Cloud,
       color: 'bg-purple-600 hover:bg-purple-700',
-      onClick: () => navigate('/analytics?tab=reports')
+      onClick: () => navigate('/deploy')
     }
   ];
 
