@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, Code2, Shield, Zap, Star, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { useAuth } from './AuthProvider';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 type AuthMode = 'login' | 'signup' | 'reset';
 
 export const AuthPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>('login');
-  const { isDemoMode } = useAuth();
+  const { isDemoMode, user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if signup parameter is present in URL
+    if (searchParams.get('signup') === 'true') {
+      setMode('signup');
+    }
+    
+    // If user is already authenticated, redirect to dashboard
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [searchParams, user, navigate]);
 
   const features = [
     {

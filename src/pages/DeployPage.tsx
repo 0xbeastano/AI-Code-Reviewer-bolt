@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Cloud, 
@@ -9,7 +9,8 @@ import {
   Github,
   Settings,
   Globe,
-  Zap
+  Zap,
+  Shield
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -21,7 +22,7 @@ const DeployPage: React.FC = () => {
   const [deployId, setDeployId] = useState<string | null>(null);
   const [deploymentStarted, setDeploymentStarted] = useState(false);
 
-  const handleDeploy = async () => {
+  const handleDeploy = () => {
     setIsDeploying(true);
     setDeploymentStarted(true);
     
@@ -34,6 +35,25 @@ const DeployPage: React.FC = () => {
       setIsDeploying(false);
     }
   };
+
+  // This effect will run when the component mounts
+  useEffect(() => {
+    // Listen for deployment status updates from the deploy action
+    const handleDeploymentMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'deployment-status') {
+        setDeployId(event.data.deployId);
+        if (event.data.status === 'complete') {
+          setIsDeploying(false);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleDeploymentMessage);
+
+    return () => {
+      window.removeEventListener('message', handleDeploymentMessage);
+    };
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">

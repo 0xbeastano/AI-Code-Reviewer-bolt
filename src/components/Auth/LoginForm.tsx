@@ -7,6 +7,7 @@ import { Eye, EyeOff, Mail, Lock, Github, Chrome, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { isDemoMode } from '../../lib/supabase';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,7 +22,7 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitchToReset }) => {
-  const { signIn, signInWithGitHub, signInWithGoogle, isDemoMode } = useAuth();
+  const { signIn, signInWithGitHub, signInWithGoogle } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);

@@ -7,6 +7,7 @@ import { Eye, EyeOff, Mail, Lock, User, Github, Chrome, Loader2, CheckCircle } f
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { isDemoMode } from '../../lib/supabase';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -27,7 +28,7 @@ interface SignupFormProps {
 }
 
 export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
-  const { signUp, signInWithGitHub, signInWithGoogle, isDemoMode } = useAuth();
+  const { signUp, signInWithGitHub, signInWithGoogle } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +40,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     register,
     handleSubmit,
     formState: { errors },
-    watch
+    watch,
+    reset
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema)
   });
