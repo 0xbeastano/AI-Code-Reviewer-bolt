@@ -35,6 +35,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
@@ -58,6 +64,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) {
+      return { error: new AuthError('Supabase client not initialized') };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -71,11 +81,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error: undefined };
     } catch (error) {
       console.error('Sign in error:', error);
-      return { error: error as AuthError };
+      return { error: new AuthError('An unexpected error occurred') };
     }
   };
 
   const signUp = async (email: string, password: string) => {
+    if (!supabase) {
+      return { error: new AuthError('Supabase client not initialized') };
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -89,11 +103,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error: undefined };
     } catch (error) {
       console.error('Sign up error:', error);
-      return { error: error as AuthError };
+      return { error: new AuthError('An unexpected error occurred') };
     }
   };
 
   const signOut = async () => {
+    if (!supabase) {
+      setUser(null);
+      setSession(null);
+      return;
+    }
+
     try {
       await supabase.auth.signOut();
     } catch (error) {
@@ -105,6 +125,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const resetPassword = async (email: string) => {
+    if (!supabase) {
+      return { error: new AuthError('Supabase client not initialized') };
+    }
+
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
@@ -117,11 +141,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error: undefined };
     } catch (error) {
       console.error('Reset password error:', error);
-      return { error: error as AuthError };
+      return { error: new AuthError('An unexpected error occurred') };
     }
   };
 
   const signInWithGitHub = async () => {
+    if (!supabase) {
+      return { error: new AuthError('Supabase client not initialized') };
+    }
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
@@ -137,11 +165,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error: undefined };
     } catch (error) {
       console.error('GitHub sign in error:', error);
-      return { error: error as AuthError };
+      return { error: new AuthError('An unexpected error occurred') };
     }
   };
 
   const signInWithGoogle = async () => {
+    if (!supabase) {
+      return { error: new AuthError('Supabase client not initialized') };
+    }
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -157,7 +189,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { error: undefined };
     } catch (error) {
       console.error('Google sign in error:', error);
-      return { error: error as AuthError };
+      return { error: new AuthError('An unexpected error occurred') };
     }
   };
 
