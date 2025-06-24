@@ -153,7 +153,7 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
                 key={stat.value}
                 initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
-                transition={{ duration: 0.3 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 {stat.value}
               </motion.div>
