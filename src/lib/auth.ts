@@ -7,7 +7,7 @@ import { supabase, isDemoMode } from './supabase';
 export const githubOAuthConfig = {
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
   clientSecret: import.meta.env.VITE_GITHUB_CLIENT_SECRET || '',
-  redirectUri: `${window.location.origin}/auth/callback`,
+  redirectUri: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
   scopes: ['repo', 'user:email', 'read:user']
 };
 
@@ -15,7 +15,7 @@ export const githubOAuthConfig = {
 export const googleOAuthConfig = {
   clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
   clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
-  redirectUri: `${window.location.origin}/auth/callback`,
+  redirectUri: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
   scopes: ['openid', 'email', 'profile']
 };
 
@@ -526,7 +526,7 @@ export class AuthService {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`
+        redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/reset-password`
       });
 
       if (error) {
