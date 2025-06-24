@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, Github, Chrome, Loader2, CheckCircle } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -32,6 +33,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
   const [emailSent, setEmailSent] = useState(false);
+  const navigate = useNavigate();
 
   const {
     register,
@@ -58,6 +60,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
         }
       } else if (user) {
         toast.success('Account created successfully!');
+        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -75,11 +78,12 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
         toast.error(error);
       } else if (url) {
         // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', window.location.pathname);
+        sessionStorage.setItem('auth_return_to', '/dashboard');
         window.location.href = url;
       } else if (isDemoMode) {
         // In demo mode, the session is created immediately
         toast.success('GitHub authentication successful!');
+        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('Failed to sign up with GitHub');
@@ -97,11 +101,12 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
         toast.error(error);
       } else if (url) {
         // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', window.location.pathname);
+        sessionStorage.setItem('auth_return_to', '/dashboard');
         window.location.href = url;
       } else if (isDemoMode) {
         // In demo mode, the session is created immediately
         toast.success('Google authentication successful!');
+        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('Failed to sign up with Google');

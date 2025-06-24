@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, Github, Chrome, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -24,13 +25,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
+  const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
     formState: { errors }
   } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema)
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: isDemoMode ? 'demo@example.com' : '',
+      password: isDemoMode ? 'password123' : ''
+    }
   });
 
   const onSubmit = async (data: LoginForm) => {
@@ -42,6 +48,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
         toast.error(error);
       } else if (user) {
         toast.success('Welcome back!');
+        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -59,11 +66,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
         toast.error(error);
       } else if (url) {
         // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', window.location.pathname);
+        sessionStorage.setItem('auth_return_to', '/dashboard');
         window.location.href = url;
       } else if (isDemoMode) {
         // In demo mode, the session is created immediately
         toast.success('GitHub authentication successful!');
+        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('Failed to sign in with GitHub');
@@ -81,11 +89,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
         toast.error(error);
       } else if (url) {
         // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', window.location.pathname);
+        sessionStorage.setItem('auth_return_to', '/dashboard');
         window.location.href = url;
       } else if (isDemoMode) {
         // In demo mode, the session is created immediately
         toast.success('Google authentication successful!');
+        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('Failed to sign in with Google');
