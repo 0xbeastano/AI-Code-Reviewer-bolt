@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
 import { supabase, isDemoMode } from '../lib/supabase';
 import { authService } from '../lib/auth';
+import { CodeExplanation, TestGenerationResult } from '../types';
+import DOMPurify from 'dompurify';
 
 export class AIService {
   private static instance: AIService;
@@ -57,18 +59,58 @@ export class AIService {
     const selectedModel = modelId || this.currentModel;
     const user = authService.getCurrentUser();
 
-    // If in demo mode or OpenAI client not initialized, return intelligent mock analysis results
-    if (isDemoMode() || !this.openai) {
-      console.log(`🔄 Using intelligent mock analysis for ${selectedModel}`);
-      // Add a delay to simulate real analysis
-      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
-      return this.getIntelligentMockAnalysis(code, language, filePath, generateImprovedCode);
-    }
-
     try {
-      console.log(`🔄 Starting ${selectedModel} analysis for ${filePath}`);
+      // Try to use the Supabase Edge Function first
+      if (supabase && !isDemoMode()) {
+        try {
+          console.log(`🔄 Using Supabase Edge Function for ${selectedModel} analysis`);
+          
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          if (!supabaseUrl) throw new Error('Supabase URL not configured');
+          
+          const apiUrl = `${supabaseUrl}/functions/v1/analyze-code`;
+          
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              code,
+              language,
+              filePath,
+              modelId: selectedModel,
+              userId: user?.id || 'anonymous',
+              generateImprovedCode
+            })
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Edge function error: ${response.status} - ${errorText}`);
+          }
+          
+          const result = await response.json();
+          console.log(`✅ Edge function analysis completed for ${filePath}`);
+          return result;
+        } catch (error) {
+          console.warn('Edge function failed, falling back to client-side analysis:', error);
+          // Fall through to client-side analysis
+        }
+      }
       
-      // Create the prompt for code analysis with enhanced security focus
+      // If in demo mode or Edge Function failed, use client-side analysis
+      if (isDemoMode() || !this.openai) {
+        console.log(`🔄 Using intelligent mock analysis for ${selectedModel}`);
+        // Add a delay to simulate real analysis
+        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+        return this.getIntelligentMockAnalysis(code, language, filePath, generateImprovedCode);
+      }
+
+      console.log(`🔄 Starting client-side ${selectedModel} analysis for ${filePath}`);
+      
+      // Create the prompt for code analysis
       const prompt = `
 You are an expert code reviewer and software engineer with deep expertise in ${language}. Analyze this code file (${filePath}) and provide comprehensive feedback.
 
@@ -109,32 +151,23 @@ Please provide a detailed analysis in JSON format with the following structure:
     "performance": number (0-100, higher is better),
     "coverage": number (0-100, estimated test coverage),
     "duplicateLines": number,
-    "linesOfCode": number
+    "linesOfCode": number,
+    "cohesion": number (0-100, higher is better),
+    "coupling": number (0-100, lower is better),
+    "cognitive": number (0-100, lower is better),
+    "documentation": number (0-100, higher is better),
+    "testability": number (0-100, higher is better),
+    "reusability": number (0-100, higher is better)
   }${generateImprovedCode ? ',\n  "improvedCode": "full improved version of the code"' : ''}
 }
 
 Focus on:
 1. Security vulnerabilities (XSS, SQL injection, authentication issues, input validation)
-   - For security issues, provide DETAILED remediation steps with specific code examples
-   - Include complete, production-ready code in the "after" field that directly fixes the vulnerability
-   - Explain the security impact and potential exploitation scenarios
-   - Reference relevant security standards (OWASP, CWE) when applicable
-
 2. Performance optimizations (algorithm efficiency, memory usage, async patterns)
-   - Identify specific performance bottlenecks with measurable impact
-   - Provide optimized implementations that maintain the same functionality
-
 3. Code quality (readability, maintainability, best practices, SOLID principles)
-   - Suggest refactorings that improve maintainability without changing behavior
-   - Identify code smells and technical debt with practical solutions
-
 4. Bug detection (logic errors, edge cases, type issues, null pointer exceptions)
-   - Highlight potential runtime errors and edge cases
-   - Provide robust error handling suggestions
-
 5. Style improvements (formatting, naming conventions, code organization)
-   - Suggest modern language features and patterns
-   - Improve code organization and structure
+6. Modern language features and patterns
 
 Provide actionable, specific feedback with clear examples. Be thorough but practical.
 For suggestions, make sure to include actual code snippets from the file in the "before" field and realistic improvements in the "after" field.
@@ -149,7 +182,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
         messages: [
           {
             role: "system",
-            content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable. Always include real code snippets from the provided code in your suggestions. For security vulnerabilities, provide detailed, production-ready fixes that completely address the issue.`
+            content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable. Always include real code snippets from the provided code in your suggestions.`
           },
           {
             role: "user",
@@ -222,7 +255,14 @@ For suggestions, make sure to include actual code snippets from the file in the 
       performance: this.calculatePerformanceScore(code, language),
       coverage: Math.floor(Math.random() * 30) + 60, // This is harder to estimate
       duplicateLines: this.estimateDuplicateLines(code),
-      linesOfCode: lineCount
+      linesOfCode: lineCount,
+      // New expanded metrics
+      cohesion: Math.floor(Math.random() * 20) + 70,
+      coupling: Math.floor(Math.random() * 30) + 20,
+      cognitive: Math.floor(Math.random() * 40) + 30,
+      documentation: Math.floor(Math.random() * 40) + 50,
+      testability: Math.floor(Math.random() * 30) + 60,
+      reusability: Math.floor(Math.random() * 30) + 60
     };
     
     // Generate issues based on actual code content
@@ -312,51 +352,31 @@ For suggestions, make sure to include actual code snippets from the file in the 
   }
 
   private calculateSecurityScore(code: string, language: string): number {
-    // Enhanced security score calculation with more detailed checks
+    // Basic security score calculation
     let securityScore = 85; // Base security score
     
-    // Check for common security issues with more detailed patterns
+    // Check for common security issues
     const securityIssues = [
-      { pattern: /eval\s*\(/, penalty: 20, critical: true },
-      { pattern: /exec\s*\(/, penalty: 20, critical: true },
-      { pattern: /innerHTML\s*=/, penalty: 15, critical: false },
-      { pattern: /document\.write\s*\(/, penalty: 15, critical: false },
-      { pattern: /sql.*\+.*(?:req|request|input|param)/, penalty: 20, critical: true }, // SQL injection
-      { pattern: /password.*=.*['"]/, penalty: 10, critical: false }, // Hardcoded passwords
-      { pattern: /token.*=.*['"]/, penalty: 10, critical: false }, // Hardcoded tokens
-      { pattern: /auth.*=.*['"]/, penalty: 10, critical: false }, // Hardcoded auth
-      { pattern: /\.createServer\s*\(\s*http\s*\)/, penalty: 10, critical: false }, // Insecure HTTP
-      { pattern: /\.parse\s*\(\s*(?:req|request|input|param)/, penalty: 5, critical: false }, // Potential JSON parsing issues
-      { pattern: /\.exec\s*\(\s*(?:req|request|input|param)/, penalty: 15, critical: true }, // Command injection
-      { pattern: /\.load\s*\(\s*(?:req|request|input|param)/, penalty: 10, critical: false }, // Unsafe loading
-      { pattern: /\.include\s*\(\s*(?:req|request|input|param)/, penalty: 10, critical: false }, // Unsafe inclusion
+      'eval(', 'exec(', 'innerHTML', 'document.write', 
+      'sql', 'query', 'password', 'token', 'auth', 
+      'xhr', 'fetch', 'http', 'url', 'parse'
     ];
     
-    let criticalIssuesFound = 0;
-    
+    let issueCount = 0;
     for (const issue of securityIssues) {
-      if (issue.pattern.test(code)) {
-        securityScore -= issue.penalty;
-        if (issue.critical) criticalIssuesFound++;
+      if (code.includes(issue)) {
+        issueCount++;
       }
     }
     
+    securityScore -= issueCount * 3;
+    
     // Check for input validation
-    if ((code.includes('input') || code.includes('param') || code.includes('req.body')) && 
-        !(code.includes('validate') || code.includes('sanitize') || code.includes('escape'))) {
-      securityScore -= 10;
+    if (code.includes('input') || code.includes('param') || code.includes('req.body')) {
+      if (!code.includes('validate') && !code.includes('sanitize')) {
+        securityScore -= 10;
+      }
     }
-    
-    // Severe penalty for critical issues
-    if (criticalIssuesFound > 0) {
-      securityScore -= criticalIssuesFound * 10;
-    }
-    
-    // Bonus for security best practices
-    if (code.includes('https') && !code.includes('http:')) securityScore += 5;
-    if (code.includes('Content-Security-Policy')) securityScore += 5;
-    if (code.includes('X-XSS-Protection')) securityScore += 3;
-    if (code.includes('helmet') || code.includes('Helmet')) securityScore += 5;
     
     return Math.min(100, Math.max(0, securityScore));
   }
@@ -406,7 +426,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
       const line = lines[i];
       const lineNumber = i + 1;
       
-      // Security issues - Enhanced with more detailed suggestions
+      // Security issues
       if (line.includes('eval(') || line.includes('new Function(')) {
         issues.push({
           id: `security-eval-${lineNumber}`,
@@ -416,7 +436,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
           column: line.indexOf('eval(') > -1 ? line.indexOf('eval(') + 1 : line.indexOf('new Function(') + 1,
           message: 'Use of eval() or new Function() is a security risk',
           rule: 'no-eval',
-          suggestion: 'Replace eval() with safer alternatives like JSON.parse() for data parsing or a proper template system for dynamic content generation. This prevents code injection attacks.'
+          suggestion: 'Avoid using eval() or new Function() as they can execute arbitrary code'
         });
       }
       
@@ -429,21 +449,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
           column: line.indexOf('innerHTML') > -1 ? line.indexOf('innerHTML') + 1 : line.indexOf('document.write') + 1,
           message: 'Potential XSS vulnerability',
           rule: 'no-innerHTML',
-          suggestion: 'Use textContent or innerText instead of innerHTML, or implement proper HTML sanitization using a library like DOMPurify. This prevents cross-site scripting (XSS) attacks by ensuring user input cannot execute as code.'
-        });
-      }
-      
-      // SQL Injection checks
-      if (line.match(/(?:query|sql|db\.execute|connection\.query).*\+.*(?:req|request|input|param)/i)) {
-        issues.push({
-          id: `security-sqli-${lineNumber}`,
-          type: 'security',
-          severity: 'critical',
-          line: lineNumber,
-          column: 1,
-          message: 'Potential SQL Injection vulnerability',
-          rule: 'no-sql-injection',
-          suggestion: 'Use parameterized queries or prepared statements instead of string concatenation. This ensures user input is properly escaped and cannot alter the structure of your SQL query.'
+          suggestion: 'Use textContent or innerText instead of innerHTML to prevent XSS attacks'
         });
       }
       
@@ -457,7 +463,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
           column: line.indexOf('for') + 1,
           message: 'Array length accessed in each loop iteration',
           rule: 'optimize-loops',
-          suggestion: 'Cache the array length before the loop to improve performance: const length = array.length; for (let i = 0; i < length; i++)'
+          suggestion: 'Cache the array length before the loop to improve performance'
         });
       }
       
@@ -471,7 +477,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
           column: line.indexOf('var ') + 1,
           message: 'Use of var keyword',
           rule: 'no-var',
-          suggestion: 'Use let or const instead of var for better scoping and to avoid hoisting-related bugs'
+          suggestion: 'Use let or const instead of var for better scoping'
         });
       }
       
@@ -564,7 +570,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
     const styleIssues = issues.filter(issue => issue.type === 'style');
     const bugIssues = issues.filter(issue => issue.type === 'bug');
     
-    // Generate security suggestions with enhanced detail
+    // Generate security suggestions
     if (securityIssues.length > 0) {
       // Find a representative issue for the suggestion
       const issue = securityIssues[0];
@@ -582,53 +588,12 @@ For suggestions, make sure to include actual code snippets from the file in the 
         before += lines[i] + '\n';
       }
       
-      // Create improved version with detailed security fixes
+      // Create improved version
       after = before;
       if (issue.rule === 'no-eval') {
-        // More comprehensive fix for eval
-        if (before.includes('eval(')) {
-          after = after.replace(/eval\s*\((.*?)\)/g, (match, p1) => {
-            if (p1.includes('JSON')) {
-              return `JSON.parse(${p1})`;
-            } else {
-              return `// SECURITY: eval() replaced with safer alternative
-// If you need to parse JSON:
-JSON.parse(${p1})
-// If you need to execute a function by name:
-// const functionName = ${p1};
-// const safeFunction = allowedFunctions[functionName];
-// if (safeFunction) safeFunction();`;
-            }
-          });
-        }
+        after = after.replace(/eval\s*\((.*?)\)/g, 'JSON.parse($1)');
       } else if (issue.rule === 'no-innerHTML') {
-        // More comprehensive fix for innerHTML
-        after = after.replace(/\.innerHTML\s*=\s*(.*?);/g, (match, p1) => {
-          return `// SECURITY: innerHTML replaced with safer textContent
-// For plain text:
-.textContent = ${p1};
-// If you need to sanitize HTML:
-// import DOMPurify from 'dompurify';
-// element.innerHTML = DOMPurify.sanitize(${p1});`;
-        });
-      } else if (issue.rule === 'no-sql-injection') {
-        // Comprehensive fix for SQL injection
-        after = after.replace(/(query|sql|db\.execute|connection\.query).*\+.*(?:req|request|input|param)/i, (match) => {
-          if (language === 'javascript' || language === 'typescript') {
-            return `// SECURITY: SQL query rewritten to use parameterized query
-const query = 'SELECT * FROM users WHERE username = ?';
-db.query(query, [req.body.username]);`;
-          } else if (language === 'python') {
-            return `# SECURITY: SQL query rewritten to use parameterized query
-query = "SELECT * FROM users WHERE username = %s"
-cursor.execute(query, (username,))`;
-          } else {
-            return `// SECURITY: Replace string concatenation with parameterized queries
-// Example: 
-// const query = 'SELECT * FROM users WHERE username = ?';
-// db.query(query, [username]);`;
-          }
-        });
+        after = after.replace(/\.innerHTML\s*=\s*(.*?);/g, '.textContent = $1;');
       }
       
       suggestions.push({
@@ -638,7 +603,7 @@ cursor.execute(query, (username,))`;
         description: `Fix ${issue.severity} security issue: ${issue.message}`,
         before: before.trim(),
         after: after.trim(),
-        impact: 'Improves application security by preventing potential vulnerabilities that could lead to data breaches or system compromise'
+        impact: 'Improves application security by preventing potential vulnerabilities'
       });
     }
     
@@ -675,7 +640,7 @@ cursor.execute(query, (username,))`;
         description: `Optimize code performance: ${issue.message}`,
         before: before.trim(),
         after: after.trim(),
-        impact: 'Improves code execution speed and reduces resource usage, especially important for loops that run many times'
+        impact: 'Improves code execution speed and reduces resource usage'
       });
     }
     
@@ -714,7 +679,7 @@ cursor.execute(query, (username,))`;
         description: `Improve code style: ${issue.message}`,
         before: before.trim(),
         after: after.trim(),
-        impact: 'Enhances code readability and maintainability, making it easier for team members to understand and modify'
+        impact: 'Enhances code readability and maintainability'
       });
     }
     
@@ -752,7 +717,7 @@ cursor.execute(query, (username,))`;
         description: `Fix potential bug: ${issue.message}`,
         before: before.trim(),
         after: after.trim(),
-        impact: 'Prevents potential runtime errors and improves code reliability by fixing issues that could cause unexpected behavior'
+        impact: 'Prevents potential runtime errors and improves code reliability'
       });
     }
     
@@ -813,7 +778,7 @@ cursor.execute(query, (username,))`;
           description: 'Add function documentation',
           before: before.trim(),
           after: after.trim(),
-          impact: 'Improves code maintainability and helps other developers understand the code purpose and usage'
+          impact: 'Improves code maintainability and helps other developers understand the code'
         });
       }
     }
@@ -893,26 +858,58 @@ cursor.execute(query, (username,))`;
     return improvedCode;
   }
 
-  // New method for AI code explanation
-  async explainCode(code: string, language: string, modelId?: string): Promise<{
-    explanation: string;
-    complexity: string;
-    keyComponents: string[];
-    potentialIssues: string[];
-  }> {
+  async explainCode(code: string, language: string, modelId?: string): Promise<CodeExplanation> {
     const selectedModel = modelId || this.currentModel;
     const user = authService.getCurrentUser();
 
-    // If in demo mode or OpenAI client not initialized, return intelligent mock explanation
-    if (isDemoMode() || !this.openai) {
-      console.log(`🔄 Using intelligent mock explanation for ${selectedModel}`);
-      // Add a delay to simulate real processing
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-      return this.generateIntelligentExplanation(code, language);
-    }
-
     try {
-      console.log(`🔄 Starting code explanation with ${selectedModel}`);
+      // Try to use the Supabase Edge Function first
+      if (supabase && !isDemoMode()) {
+        try {
+          console.log(`🔄 Using Supabase Edge Function for code explanation`);
+          
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          if (!supabaseUrl) throw new Error('Supabase URL not configured');
+          
+          const apiUrl = `${supabaseUrl}/functions/v1/explain-code`;
+          
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              code,
+              language,
+              modelId: selectedModel,
+              userId: user?.id || 'anonymous'
+            })
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Edge function error: ${response.status} - ${errorText}`);
+          }
+          
+          const result = await response.json();
+          console.log(`✅ Edge function explanation completed`);
+          return result;
+        } catch (error) {
+          console.warn('Edge function failed, falling back to client-side explanation:', error);
+          // Fall through to client-side analysis
+        }
+      }
+      
+      // If in demo mode or Edge Function failed, use client-side analysis
+      if (isDemoMode() || !this.openai) {
+        console.log(`🔄 Using intelligent mock explanation`);
+        // Add a delay to simulate real analysis
+        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+        return this.getMockCodeExplanation(code, language);
+      }
+
+      console.log(`🔄 Starting client-side ${selectedModel} code explanation`);
       
       // Create the prompt for code explanation
       const prompt = `
@@ -922,20 +919,15 @@ Please explain the following ${language} code in detail:
 ${code}
 \`\`\`
 
-Provide your explanation in JSON format with the following structure:
+Provide your response in JSON format with the following structure:
 {
   "explanation": "A clear, detailed explanation of what the code does, how it works, and its purpose",
-  "complexity": "An assessment of the code's complexity (simple, moderate, complex) with justification",
-  "keyComponents": [
-    "List of key components, functions, or sections in the code",
-    "With brief descriptions of each"
-  ],
-  "potentialIssues": [
-    "Potential issues, edge cases, or improvements that could be made"
-  ]
+  "complexity": "An assessment of the code's complexity and readability",
+  "keyComponents": ["List of key functions, classes, or components in the code", "With brief descriptions"],
+  "potentialIssues": ["List of potential issues, edge cases, or improvements", "That could be addressed"]
 }
 
-Make your explanation accessible to developers of all skill levels. Focus on clarity and comprehensiveness.
+Be thorough but concise. Focus on helping a developer understand the code's purpose, structure, and potential issues.
 `;
 
       // Get model configuration
@@ -947,7 +939,7 @@ Make your explanation accessible to developers of all skill levels. Focus on cla
         messages: [
           {
             role: "system",
-            content: `You are an expert code explainer who can break down complex code into clear, understandable explanations. You excel at identifying the purpose, patterns, and potential issues in code. Provide your explanation in the exact JSON format requested.`
+            content: `You are an expert code explainer who helps developers understand complex code. Provide clear, accurate explanations in the exact JSON format requested.`
           },
           {
             role: "user",
@@ -970,185 +962,158 @@ Make your explanation accessible to developers of all skill levels. Focus on cla
       }
 
       const explanation = JSON.parse(jsonMatch[0]);
-      console.log(`✅ Code explanation completed with ${selectedModel}`);
-
+      
+      // Sanitize HTML content if any
+      if (explanation.explanation) {
+        explanation.explanation = DOMPurify.sanitize(explanation.explanation);
+      }
+      
+      console.log(`✅ ${selectedModel} code explanation completed`);
       return explanation;
     } catch (error) {
-      console.error(`Code explanation failed with ${selectedModel.toUpperCase()}:`, error);
-      return this.generateIntelligentExplanation(code, language);
+      console.error(`Code explanation failed:`, error);
+      return this.getMockCodeExplanation(code, language);
     }
   }
 
-  private generateIntelligentExplanation(code: string, language: string): {
-    explanation: string;
-    complexity: string;
-    keyComponents: string[];
-    potentialIssues: string[];
-  } {
-    // Basic code analysis for explanation
+  private getMockCodeExplanation(code: string, language: string): CodeExplanation {
+    // Generate a mock explanation based on code characteristics
     const lines = code.split('\n');
-    const functionMatches = code.match(/function\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)/g) || [];
+    const functionMatches = code.match(/function\s+([a-zA-Z0-9_]+)|def\s+([a-zA-Z0-9_]+)/g) || [];
     const classMatches = code.match(/class\s+([a-zA-Z0-9_]+)/g) || [];
     
-    // Detect language-specific patterns
-    let languageSpecificPatterns = [];
-    if (language === 'javascript' || language === 'typescript') {
-      languageSpecificPatterns = [
-        'async/await', 'Promise', 'try/catch', 'import/export',
-        'destructuring', 'spread operator', 'arrow functions'
-      ].filter(pattern => code.includes(pattern.split('/')[0]));
-    } else if (language === 'python') {
-      languageSpecificPatterns = [
-        'list comprehension', 'with statement', 'decorators', 'generators',
-        'f-strings', 'type hints', 'async/await'
-      ].filter(pattern => {
-        if (pattern === 'list comprehension') return code.includes('[') && code.includes('for');
-        if (pattern === 'with statement') return code.includes('with ');
-        if (pattern === 'decorators') return code.includes('@');
-        if (pattern === 'generators') return code.includes('yield');
-        if (pattern === 'f-strings') return code.includes('f"') || code.includes("f'");
-        if (pattern === 'type hints') return code.includes('->') || code.includes(': ');
-        if (pattern === 'async/await') return code.includes('async') || code.includes('await');
-        return false;
-      });
-    }
-    
-    // Determine complexity
-    const complexity = this.calculateComplexity(code, language);
-    let complexityLevel = 'simple';
-    if (complexity > 40) complexityLevel = 'moderate';
-    if (complexity > 70) complexityLevel = 'complex';
-    
-    // Generate key components
-    const keyComponents = [];
-    
-    // Add functions
-    functionMatches.forEach(match => {
-      const functionName = match.match(/function\s+([a-zA-Z0-9_]+)/)[1];
-      keyComponents.push(`Function '${functionName}': Handles specific functionality in the code`);
+    const functions = functionMatches.map(match => {
+      const name = match.replace(/function\s+|def\s+/, '');
+      return `${name}() - Handles ${name.toLowerCase().replace(/[^a-z0-9]/g, ' ')} operations`;
     });
     
-    // Add classes
-    classMatches.forEach(match => {
-      const className = match.match(/class\s+([a-zA-Z0-9_]+)/)[1];
-      keyComponents.push(`Class '${className}': Defines a blueprint for objects with properties and methods`);
+    const classes = classMatches.map(match => {
+      const name = match.replace(/class\s+/, '');
+      return `${name} - Represents a ${name.toLowerCase().replace(/[^a-z0-9]/g, ' ')} entity`;
     });
     
-    // Add language-specific components
-    if (languageSpecificPatterns.length > 0) {
-      keyComponents.push(`Uses ${languageSpecificPatterns.join(', ')} for modern ${language} functionality`);
-    }
-    
-    // If no components detected, add generic ones
+    const keyComponents = [...functions, ...classes];
     if (keyComponents.length === 0) {
-      keyComponents.push('Main code block: Contains the primary logic of the program');
-      if (lines.length > 10) {
-        keyComponents.push('Helper functions: Support the main functionality');
-      }
+      keyComponents.push('Main code block - Contains the primary logic');
     }
     
     // Generate potential issues
     const potentialIssues = [];
     
-    // Check for common issues
-    if (code.includes('console.log')) {
-      potentialIssues.push('Contains console.log statements that should be removed in production code');
+    if (code.includes('var ')) {
+      potentialIssues.push('Uses var declarations which can lead to scoping issues');
+    }
+    
+    if (code.includes('==')) {
+      potentialIssues.push('Uses loose equality (==) which can cause unexpected type coercion');
+    }
+    
+    if (code.includes('try') && !code.includes('catch')) {
+      potentialIssues.push('Missing error handling in try blocks');
+    }
+    
+    if (lines.some(line => line.length > 100)) {
+      potentialIssues.push('Contains long lines that may reduce readability');
     }
     
     if (code.includes('TODO') || code.includes('FIXME')) {
-      potentialIssues.push('Contains TODO or FIXME comments indicating incomplete implementation');
+      potentialIssues.push('Contains TODO or FIXME comments that should be addressed');
     }
     
-    if (complexity > 50) {
-      potentialIssues.push('Code complexity is high, consider refactoring into smaller functions');
-    }
-    
-    const commentLines = lines.filter(line => {
-      const trimmed = line.trim();
-      return trimmed.startsWith('//') || trimmed.startsWith('#') || 
-             trimmed.startsWith('/*') || trimmed.startsWith('*');
-    }).length;
-    
-    if (commentLines / lines.length < 0.1) {
-      potentialIssues.push('Limited comments/documentation may make the code harder to understand');
-    }
-    
-    // Add security issues if detected
-    if (code.includes('eval(') || code.includes('innerHTML') || code.includes('document.write')) {
-      potentialIssues.push('Contains potential security vulnerabilities (eval, innerHTML, or document.write)');
-    }
-    
-    // If no issues detected, add generic ones
+    // Add generic issues if none were found
     if (potentialIssues.length === 0) {
-      potentialIssues.push('Consider adding more comprehensive error handling');
-      potentialIssues.push('May benefit from additional input validation');
+      potentialIssues.push('Could benefit from additional error handling');
+      potentialIssues.push('Consider adding more comprehensive documentation');
+    }
+    
+    // Generate complexity assessment
+    let complexity = 'Low';
+    const complexityScore = this.calculateComplexity(code, language);
+    if (complexityScore > 70) {
+      complexity = 'High - The code contains complex logic and nested structures that may be difficult to understand';
+    } else if (complexityScore > 40) {
+      complexity = 'Medium - The code has moderate complexity with some nested structures';
+    } else {
+      complexity = 'Low - The code is straightforward and easy to understand';
     }
     
     // Generate explanation
-    let explanation = `This ${language} code `;
-    
-    if (functionMatches.length > 0) {
-      explanation += `defines ${functionMatches.length} function(s) `;
+    let explanation = '';
+    if (functions.length > 0 || classes.length > 0) {
+      explanation = `This ${language} code ${functions.length > 0 ? 'defines ' + functions.length + ' functions' : ''}${functions.length > 0 && classes.length > 0 ? ' and ' : ''}${classes.length > 0 ? 'implements ' + classes.length + ' classes' : ''}. `;
+      explanation += `It appears to ${code.includes('import') || code.includes('require') ? 'import external dependencies and ' : ''}handle ${keyComponents.length > 1 ? 'multiple related operations' : 'a specific operation'}.`;
+    } else {
+      explanation = `This ${language} code implements a script that performs operations directly without defining functions or classes. `;
+      explanation += `It ${code.includes('if') || code.includes('for') || code.includes('while') ? 'contains control structures for conditional logic or iteration' : 'executes sequentially'}.`;
     }
     
-    if (classMatches.length > 0) {
-      explanation += `${functionMatches.length > 0 ? 'and ' : ''}defines ${classMatches.length} class(es) `;
-    }
-    
-    explanation += `that appear to ${
-      code.includes('fetch') || code.includes('http') || code.includes('request') 
-        ? 'make API requests or handle network operations' 
-        : code.includes('document') || code.includes('element') || code.includes('querySelector') 
-        ? 'manipulate the DOM or handle UI interactions' 
-        : code.includes('data') || code.includes('array') || code.includes('object') 
-        ? 'process or transform data' 
-        : 'implement business logic'
-    }. `;
-    
-    explanation += `The code ${
-      complexity < 30 
-        ? 'is straightforward and easy to follow' 
-        : complexity < 60 
-        ? 'has moderate complexity with several logical branches' 
-        : 'is quite complex with multiple nested operations'
-    }.`;
+    explanation += ` The code ${lines.length < 20 ? 'is relatively short' : lines.length < 50 ? 'is of moderate length' : 'is quite lengthy'} with ${lines.length} lines.`;
     
     return {
       explanation,
-      complexity: `${complexityLevel} - The code has a complexity score of ${complexity}/100 based on control flow, nesting, and size`,
+      complexity,
       keyComponents,
       potentialIssues
     };
   }
 
-  // New method for AI test generation
-  async generateTests(code: string, language: string, filePath: string, modelId?: string): Promise<{
-    testCode: string;
-    testCases: Array<{
-      description: string;
-      input: string;
-      expectedOutput: string;
-    }>;
-    coverage: number;
-    framework: string;
-  }> {
+  async generateTests(code: string, language: string, filePath: string, modelId?: string): Promise<TestGenerationResult> {
     const selectedModel = modelId || this.currentModel;
     const user = authService.getCurrentUser();
 
-    // If in demo mode or OpenAI client not initialized, return intelligent mock tests
-    if (isDemoMode() || !this.openai) {
-      console.log(`🔄 Using intelligent mock test generation for ${selectedModel}`);
-      // Add a delay to simulate real processing
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2500));
-      return this.generateIntelligentTests(code, language, filePath);
-    }
-
     try {
-      console.log(`🔄 Starting test generation with ${selectedModel}`);
+      // Try to use the Supabase Edge Function first
+      if (supabase && !isDemoMode()) {
+        try {
+          console.log(`🔄 Using Supabase Edge Function for test generation`);
+          
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          if (!supabaseUrl) throw new Error('Supabase URL not configured');
+          
+          const apiUrl = `${supabaseUrl}/functions/v1/generate-tests`;
+          
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              code,
+              language,
+              filePath,
+              modelId: selectedModel,
+              userId: user?.id || 'anonymous'
+            })
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Edge function error: ${response.status} - ${errorText}`);
+          }
+          
+          const result = await response.json();
+          console.log(`✅ Edge function test generation completed`);
+          return result;
+        } catch (error) {
+          console.warn('Edge function failed, falling back to client-side test generation:', error);
+          // Fall through to client-side analysis
+        }
+      }
+      
+      // If in demo mode or Edge Function failed, use client-side analysis
+      if (isDemoMode() || !this.openai) {
+        console.log(`🔄 Using intelligent mock test generation`);
+        // Add a delay to simulate real analysis
+        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+        return this.getMockTestGeneration(code, language, filePath);
+      }
+
+      console.log(`🔄 Starting client-side ${selectedModel} test generation`);
       
       // Create the prompt for test generation
       const prompt = `
-Generate comprehensive unit tests for the following ${language} code:
+Generate comprehensive test cases for the following ${language} code:
 
 \`\`\`${language}
 ${code}
@@ -1156,11 +1121,11 @@ ${code}
 
 Provide your response in JSON format with the following structure:
 {
-  "testCode": "Complete, runnable test code that can be directly used",
+  "testCode": "Complete test code that can be directly used to test the provided code",
   "testCases": [
     {
       "description": "Description of what this test case verifies",
-      "input": "Example input values or setup",
+      "input": "Sample input or parameters",
       "expectedOutput": "Expected result or behavior"
     }
   ],
@@ -1168,16 +1133,16 @@ Provide your response in JSON format with the following structure:
   "framework": "Name of the testing framework used (e.g., Jest, pytest)"
 }
 
-Guidelines for test generation:
-1. Use the most appropriate testing framework for ${language}
-2. Include tests for normal operation, edge cases, and error handling
-3. Make tests independent and deterministic
-4. Follow testing best practices for ${language}
-5. Ensure the tests are complete and can be run without modification
-6. Include appropriate mocks or stubs for external dependencies
-7. Add clear descriptions for each test case
+The test code should:
+1. Use the appropriate testing framework for ${language}
+2. Include all necessary imports and setup
+3. Cover edge cases and main functionality
+4. Be well-documented and follow best practices
+5. Be ready to run with minimal modifications
 
-The tests should be thorough enough to catch regressions and verify all key functionality.
+For JavaScript/TypeScript, use Jest or Mocha.
+For Python, use pytest or unittest.
+For other languages, use the most appropriate testing framework.
 `;
 
       // Get model configuration
@@ -1189,7 +1154,7 @@ The tests should be thorough enough to catch regressions and verify all key func
         messages: [
           {
             role: "system",
-            content: `You are an expert test engineer who specializes in writing comprehensive, effective unit tests. You understand testing best practices across different languages and frameworks. Provide your test code in the exact JSON format requested.`
+            content: `You are an expert test engineer who specializes in writing comprehensive, effective test suites. Generate practical, runnable test code in the exact JSON format requested.`
           },
           {
             role: "user",
@@ -1212,503 +1177,92 @@ The tests should be thorough enough to catch regressions and verify all key func
       }
 
       const testData = JSON.parse(jsonMatch[0]);
-      console.log(`✅ Test generation completed with ${selectedModel}`);
-
+      
+      // Sanitize HTML content if any
+      if (testData.testCode) {
+        testData.testCode = DOMPurify.sanitize(testData.testCode);
+      }
+      
+      console.log(`✅ ${selectedModel} test generation completed`);
       return testData;
     } catch (error) {
-      console.error(`Test generation failed with ${selectedModel.toUpperCase()}:`, error);
-      return this.generateIntelligentTests(code, language, filePath);
+      console.error(`Test generation failed:`, error);
+      return this.getMockTestGeneration(code, language, filePath);
     }
   }
 
-  private generateIntelligentTests(code: string, language: string, filePath: string): {
-    testCode: string;
-    testCases: Array<{
-      description: string;
-      input: string;
-      expectedOutput: string;
-    }>;
-    coverage: number;
-    framework: string;
-  } {
-    // Extract function and class names for test generation
-    const functionMatches = code.match(/function\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)/g) || [];
-    const classMatches = code.match(/class\s+([a-zA-Z0-9_]+)/g) || [];
+  private getMockTestGeneration(code: string, language: string, filePath: string): TestGenerationResult {
+    // Generate mock test data based on code characteristics
+    const fileName = filePath.split('/').pop() || 'file';
+    const baseName = fileName.replace(/\.[^/.]+$/, '');
     
     // Determine appropriate test framework
     let framework = 'Jest';
+    let testCode = '';
+    
     if (language === 'python') {
       framework = 'pytest';
-    } else if (language === 'java') {
-      framework = 'JUnit';
-    } else if (language === 'csharp') {
-      framework = 'NUnit';
+      testCode = `import pytest\nfrom ${baseName} import *\n\n`;
+      testCode += `def test_${baseName}_functionality():\n    # Test basic functionality\n    assert True\n\n`;
+      testCode += `def test_${baseName}_edge_cases():\n    # Test edge cases\n    assert True\n`;
+    } else if (language === 'javascript' || language === 'typescript') {
+      framework = 'Jest';
+      testCode = `import { ${baseName} } from './${baseName}';\n\n`;
+      testCode += `describe('${baseName}', () => {\n`;
+      testCode += `  test('should work correctly', () => {\n    // Test basic functionality\n    expect(true).toBe(true);\n  });\n\n`;
+      testCode += `  test('should handle edge cases', () => {\n    // Test edge cases\n    expect(true).toBe(true);\n  });\n});\n`;
+    } else {
+      testCode = `// Tests for ${fileName}\n\n`;
+      testCode += `// Test basic functionality\nassert(true);\n\n`;
+      testCode += `// Test edge cases\nassert(true);\n`;
     }
+    
+    // Extract function names for test cases
+    const functionMatches = code.match(/function\s+([a-zA-Z0-9_]+)|def\s+([a-zA-Z0-9_]+)/g) || [];
+    const functionNames = functionMatches.map(match => {
+      return match.replace(/function\s+|def\s+/, '');
+    });
     
     // Generate test cases
     const testCases = [];
     
-    // Function test cases
-    functionMatches.forEach(match => {
-      const functionName = match.match(/function\s+([a-zA-Z0-9_]+)/)[1];
-      const params = match.match(/\(([^)]*)\)/)[1].split(',').map(p => p.trim()).filter(p => p);
-      
-      // Basic test case
-      testCases.push({
-        description: `${functionName} should work with valid input`,
-        input: params.length > 0 ? `${params.map(p => `${p}: validValue`).join(', ')}` : 'No input required',
-        expectedOutput: 'Expected result based on function purpose'
-      });
-      
-      // Edge case
-      testCases.push({
-        description: `${functionName} should handle edge cases`,
-        input: params.length > 0 ? `${params.map(p => `${p}: edgeValue`).join(', ')}` : 'Edge case input',
-        expectedOutput: 'Expected result for edge case'
-      });
-      
-      // Error case
-      testCases.push({
-        description: `${functionName} should handle invalid input`,
-        input: params.length > 0 ? `${params.map(p => `${p}: invalidValue`).join(', ')}` : 'Invalid input',
-        expectedOutput: 'Error or appropriate handling'
-      });
-    });
-    
-    // Class test cases
-    classMatches.forEach(match => {
-      const className = match.match(/class\s+([a-zA-Z0-9_]+)/)[1];
-      
-      testCases.push({
-        description: `${className} should initialize correctly`,
-        input: 'Constructor parameters',
-        expectedOutput: 'Properly initialized instance'
-      });
-      
-      testCases.push({
-        description: `${className} methods should work as expected`,
-        input: 'Method parameters',
-        expectedOutput: 'Expected method results'
-      });
-    });
-    
-    // If no functions or classes detected, create generic test cases
-    if (testCases.length === 0) {
-      testCases.push({
-        description: 'Code should execute without errors',
-        input: 'Standard input',
-        expectedOutput: 'Expected output'
-      });
-      
-      testCases.push({
-        description: 'Code should handle edge cases',
-        input: 'Edge case input',
-        expectedOutput: 'Expected edge case handling'
-      });
-      
-      testCases.push({
-        description: 'Code should handle invalid input',
-        input: 'Invalid input',
-        expectedOutput: 'Appropriate error handling'
-      });
-    }
-    
-    // Generate test code
-    let testCode = '';
-    
-    if (language === 'javascript' || language === 'typescript') {
-      testCode = this.generateJavaScriptTests(code, functionMatches, classMatches);
-    } else if (language === 'python') {
-      testCode = this.generatePythonTests(code, functionMatches, classMatches);
+    if (functionNames.length > 0) {
+      for (const funcName of functionNames.slice(0, 3)) {
+        testCases.push({
+          description: `Test that ${funcName} works with valid input`,
+          input: 'validInput',
+          expectedOutput: 'expectedResult'
+        });
+        
+        testCases.push({
+          description: `Test that ${funcName} handles edge cases`,
+          input: 'edgeCaseInput',
+          expectedOutput: 'edgeCaseResult'
+        });
+      }
     } else {
-      testCode = this.generateGenericTests(code, language, functionMatches, classMatches);
+      testCases.push({
+        description: 'Test basic functionality',
+        input: 'standardInput',
+        expectedOutput: 'expectedOutput'
+      });
+      
+      testCases.push({
+        description: 'Test edge case handling',
+        input: 'edgeCaseInput',
+        expectedOutput: 'edgeCaseOutput'
+      });
     }
+    
+    // Calculate mock coverage
+    const coverage = Math.floor(Math.random() * 20) + 75; // 75-95%
     
     return {
       testCode,
       testCases,
-      coverage: 75 + Math.floor(Math.random() * 15), // Random between 75-90
+      coverage,
       framework
     };
-  }
-
-  private generateJavaScriptTests(code: string, functionMatches: string[], classMatches: string[]): string {
-    const fileName = 'module';
-    let testCode = `import { `;
-    
-    // Extract function and class names
-    const functionNames = functionMatches.map(match => match.match(/function\s+([a-zA-Z0-9_]+)/)[1]);
-    const classNames = classMatches.map(match => match.match(/class\s+([a-zA-Z0-9_]+)/)[1]);
-    
-    // Add imports
-    const imports = [...functionNames, ...classNames];
-    testCode += imports.join(', ');
-    testCode += ` } from './${fileName}';\n\n`;
-    
-    // Add Jest describe block
-    testCode += `describe('${fileName} tests', () => {\n`;
-    
-    // Add function tests
-    functionNames.forEach(functionName => {
-      testCode += `  describe('${functionName}', () => {\n`;
-      testCode += `    test('should work with valid input', () => {\n`;
-      testCode += `      // Arrange\n`;
-      testCode += `      const input = 'valid input';\n`;
-      testCode += `      const expected = 'expected result';\n\n`;
-      testCode += `      // Act\n`;
-      testCode += `      const result = ${functionName}(input);\n\n`;
-      testCode += `      // Assert\n`;
-      testCode += `      expect(result).toEqual(expected);\n`;
-      testCode += `    });\n\n`;
-      
-      testCode += `    test('should handle edge cases', () => {\n`;
-      testCode += `      // Arrange\n`;
-      testCode += `      const input = 'edge case';\n`;
-      testCode += `      const expected = 'expected result for edge case';\n\n`;
-      testCode += `      // Act\n`;
-      testCode += `      const result = ${functionName}(input);\n\n`;
-      testCode += `      // Assert\n`;
-      testCode += `      expect(result).toEqual(expected);\n`;
-      testCode += `    });\n\n`;
-      
-      testCode += `    test('should handle invalid input', () => {\n`;
-      testCode += `      // Arrange\n`;
-      testCode += `      const input = null;\n\n`;
-      testCode += `      // Act & Assert\n`;
-      testCode += `      expect(() => ${functionName}(input)).toThrow();\n`;
-      testCode += `    });\n`;
-      testCode += `  });\n\n`;
-    });
-    
-    // Add class tests
-    classNames.forEach(className => {
-      testCode += `  describe('${className}', () => {\n`;
-      testCode += `    test('should initialize correctly', () => {\n`;
-      testCode += `      // Act\n`;
-      testCode += `      const instance = new ${className}();\n\n`;
-      testCode += `      // Assert\n`;
-      testCode += `      expect(instance).toBeInstanceOf(${className});\n`;
-      testCode += `    });\n\n`;
-      
-      testCode += `    test('methods should work as expected', () => {\n`;
-      testCode += `      // Arrange\n`;
-      testCode += `      const instance = new ${className}();\n`;
-      testCode += `      const input = 'test input';\n`;
-      testCode += `      const expected = 'expected result';\n\n`;
-      testCode += `      // Act\n`;
-      testCode += `      const result = instance.someMethod(input);\n\n`;
-      testCode += `      // Assert\n`;
-      testCode += `      expect(result).toEqual(expected);\n`;
-      testCode += `    });\n`;
-      testCode += `  });\n\n`;
-    });
-    
-    // If no functions or classes, add generic tests
-    if (functionNames.length === 0 && classNames.length === 0) {
-      testCode += `  test('code should execute without errors', () => {\n`;
-      testCode += `    // This is a placeholder test. Replace with actual tests.\n`;
-      testCode += `    expect(true).toBe(true);\n`;
-      testCode += `  });\n\n`;
-    }
-    
-    testCode += `});\n`;
-    
-    return testCode;
-  }
-
-  private generatePythonTests(code: string, functionMatches: string[], classMatches: string[]): string {
-    const fileName = 'module';
-    let testCode = `import pytest\n`;
-    testCode += `from ${fileName} import `;
-    
-    // Extract function and class names
-    const functionNames = functionMatches.map(match => match.match(/function\s+([a-zA-Z0-9_]+)/)?.[1] || '').filter(Boolean);
-    const classNames = classMatches.map(match => match.match(/class\s+([a-zA-Z0-9_]+)/)?.[1] || '').filter(Boolean);
-    
-    // Add imports
-    const imports = [...functionNames, ...classNames];
-    testCode += imports.join(', ');
-    testCode += `\n\n`;
-    
-    // Add function tests
-    functionNames.forEach(functionName => {
-      testCode += `def test_${functionName}_valid_input():\n`;
-      testCode += `    # Arrange\n`;
-      testCode += `    input_value = "valid input"\n`;
-      testCode += `    expected = "expected result"\n\n`;
-      testCode += `    # Act\n`;
-      testCode += `    result = ${functionName}(input_value)\n\n`;
-      testCode += `    # Assert\n`;
-      testCode += `    assert result == expected\n\n`;
-      
-      testCode += `def test_${functionName}_edge_case():\n`;
-      testCode += `    # Arrange\n`;
-      testCode += `    input_value = "edge case"\n`;
-      testCode += `    expected = "expected result for edge case"\n\n`;
-      testCode += `    # Act\n`;
-      testCode += `    result = ${functionName}(input_value)\n\n`;
-      testCode += `    # Assert\n`;
-      testCode += `    assert result == expected\n\n`;
-      
-      testCode += `def test_${functionName}_invalid_input():\n`;
-      testCode += `    # Arrange\n`;
-      testCode += `    input_value = None\n\n`;
-      testCode += `    # Act & Assert\n`;
-      testCode += `    with pytest.raises(Exception):\n`;
-      testCode += `        ${functionName}(input_value)\n\n`;
-    });
-    
-    // Add class tests
-    classNames.forEach(className => {
-      testCode += `class Test${className}:\n`;
-      testCode += `    def test_initialization(self):\n`;
-      testCode += `        # Act\n`;
-      testCode += `        instance = ${className}()\n\n`;
-      testCode += `        # Assert\n`;
-      testCode += `        assert isinstance(instance, ${className})\n\n`;
-      
-      testCode += `    def test_methods(self):\n`;
-      testCode += `        # Arrange\n`;
-      testCode += `        instance = ${className}()\n`;
-      testCode += `        input_value = "test input"\n`;
-      testCode += `        expected = "expected result"\n\n`;
-      testCode += `        # Act\n`;
-      testCode += `        result = instance.some_method(input_value)\n\n`;
-      testCode += `        # Assert\n`;
-      testCode += `        assert result == expected\n\n`;
-    });
-    
-    // If no functions or classes, add generic tests
-    if (functionNames.length === 0 && classNames.length === 0) {
-      testCode += `def test_code_execution():\n`;
-      testCode += `    # This is a placeholder test. Replace with actual tests.\n`;
-      testCode += `    assert True\n\n`;
-    }
-    
-    return testCode;
-  }
-
-  private generateGenericTests(code: string, language: string, functionMatches: string[], classMatches: string[]): string {
-    // Generate a generic test template based on the language
-    let testCode = `// Generic test template for ${language}\n\n`;
-    
-    testCode += `// Import the code to test\n`;
-    testCode += `// import { ... } from './module';\n\n`;
-    
-    testCode += `// Test suite\n`;
-    testCode += `// describe('Module tests', () => {\n`;
-    testCode += `//   test('should work correctly', () => {\n`;
-    testCode += `//     // Arrange\n`;
-    testCode += `//     const input = 'test';\n`;
-    testCode += `//     const expected = 'result';\n\n`;
-    testCode += `//     // Act\n`;
-    testCode += `//     const result = someFunction(input);\n\n`;
-    testCode += `//     // Assert\n`;
-    testCode += `//     expect(result).toEqual(expected);\n`;
-    testCode += `//   });\n`;
-    testCode += `// });\n\n`;
-    
-    testCode += `// Note: This is a generic template. Please adapt it to your specific testing framework and language.\n`;
-    
-    return testCode;
-  }
-
-  async generateDocumentation(code: string, language: string, modelId?: string): Promise<string> {
-    const selectedModel = modelId || this.currentModel;
-    const user = authService.getCurrentUser();
-
-    // If in demo mode or OpenAI client not initialized, return intelligent mock documentation
-    if (isDemoMode() || !this.openai) {
-      console.log('🔄 Using intelligent mock documentation');
-      // Add a delay to simulate real processing
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-      return this.generateIntelligentDocumentation(code, language);
-    }
-
-    try {
-      console.log(`🔄 Starting documentation generation with ${selectedModel}`);
-      
-      // Create the prompt for documentation generation
-      const prompt = `
-Please add comprehensive documentation to the following ${language} code:
-
-\`\`\`${language}
-${code}
-\`\`\`
-
-Add appropriate comments, docstrings, and explanations to make the code more maintainable and understandable.
-Follow best practices for documentation in ${language}.
-Do not change the functionality of the code, only add documentation.
-Return the fully documented code.
-`;
-
-      // Get model configuration
-      const config = this.getModelConfig(selectedModel);
-      
-      // Call OpenAI API
-      const response = await this.openai.chat.completions.create({
-        model: config.model,
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert software documentation specialist. Your task is to add clear, concise, and helpful documentation to code without changing its functionality.`
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: config.maxTokens
-      });
-
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error(`No response from ${selectedModel}`);
-      }
-
-      // Extract code from response
-      const codeMatch = content.match(/```[\s\S]*?\n([\s\S]*?)```/);
-      const documentedCode = codeMatch ? codeMatch[1] : content;
-      
-      console.log(`✅ Documentation generation completed with ${selectedModel}`);
-      return documentedCode;
-    } catch (error) {
-      console.error(`Documentation generation failed with ${selectedModel.toUpperCase()}:`, error);
-      return this.generateIntelligentDocumentation(code, language);
-    }
-  }
-
-  private generateIntelligentDocumentation(code: string, language: string): string {
-    const lines = code.split('\n');
-    let documentedCode = '';
-    const fileName = '';
-    
-    // Identify functions and classes
-    const functionRegex = language === 'python' 
-      ? /^\s*def\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\):/
-      : /^\s*(?:function|const|let|var)?\s*([a-zA-Z0-9_]+)\s*(?:=\s*(?:function|async function)?\s*\(([^)]*)\)|=\s*\(([^)]*)\)\s*=>|=>\s*{|=>\s*\(|=>\s*[^{]|=\s*{|=\s*\(|=\s*\[|=\s*"|=\s*'|=\s*`|=\s*\d|=\s*true|=\s*false|=\s*null|=\s*undefined|=\s*new|=\s*\[\]|=\s*\{\}|=\s*\/|=\s*\+|=\s*\-|=\s*\*|=\s*\/|=\s*%|=\s*&|=\s*\|)/;
-    
-    const classRegex = language === 'python'
-      ? /^\s*class\s+([a-zA-Z0-9_]+)(?:\s*\(([^)]*)\))?:/
-      : /^\s*class\s+([a-zA-Z0-9_]+)(?:\s+extends\s+([a-zA-Z0-9_]+))?/;
-    
-    let inFunction = false;
-    let inClass = false;
-    let functionName = '';
-    let className = '';
-    let params = '';
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Check for function definition
-      const functionMatch = line.match(functionRegex);
-      if (functionMatch) {
-        inFunction = true;
-        functionName = functionMatch[1];
-        params = functionMatch[2] || '';
-        
-        // Add function documentation
-        if (language === 'javascript' || language === 'typescript') {
-          documentedCode += '/**\n';
-          documentedCode += ` * ${functionName} - Function description\n`;
-          
-          // Add param documentation
-          if (params) {
-            const paramList = params.split(',').map(p => p.trim());
-            for (const param of paramList) {
-              if (param) {
-                const paramName = param.split('=')[0].trim().replace(/^[a-zA-Z0-9_]+: /, '');
-                documentedCode += ` * @param {any} ${paramName} - Parameter description\n`;
-              }
-            }
-          }
-          
-          documentedCode += ` * @returns {any} - Return value description\n`;
-          documentedCode += ' */\n';
-        } else if (language === 'python') {
-          documentedCode += '"""\n';
-          documentedCode += `${functionName} - Function description\n\n`;
-          
-          // Add param documentation
-          if (params) {
-            documentedCode += 'Args:\n';
-            const paramList = params.split(',').map(p => p.trim());
-            for (const param of paramList) {
-              if (param) {
-                const paramName = param.split('=')[0].trim();
-                documentedCode += `    ${paramName} (any): Parameter description\n`;
-              }
-            }
-            documentedCode += '\n';
-          }
-          
-          documentedCode += 'Returns:\n';
-          documentedCode += '    any: Return value description\n';
-          documentedCode += '"""\n';
-        }
-      }
-      
-      // Check for class definition
-      const classMatch = line.match(classRegex);
-      if (classMatch) {
-        inClass = true;
-        className = classMatch[1];
-        
-        // Add class documentation
-        if (language === 'javascript' || language === 'typescript') {
-          documentedCode += '/**\n';
-          documentedCode += ` * ${className} - Class description\n`;
-          documentedCode += ' */\n';
-        } else if (language === 'python') {
-          documentedCode += '"""\n';
-          documentedCode += `${className} - Class description\n\n`;
-          documentedCode += 'Attributes:\n';
-          documentedCode += '    attribute_name (type): Attribute description\n\n';
-          documentedCode += 'Methods:\n';
-          documentedCode += '    method_name(params): Method description\n';
-          documentedCode += '"""\n';
-        }
-      }
-      
-      // Add the original line
-      documentedCode += line + '\n';
-      
-      // Reset flags if we're at the end of a block
-      if (inFunction && line.includes('}')) {
-        inFunction = false;
-      }
-      
-      if (inClass && line.includes('}')) {
-        inClass = false;
-      }
-    }
-    
-    // If no functions or classes were found, add file-level documentation
-    if (!documentedCode.includes('/**') && !documentedCode.includes('"""')) {
-      let fileDoc = '';
-      
-      if (language === 'javascript' || language === 'typescript') {
-        fileDoc = '/**\n';
-        fileDoc += ` * ${fileName} - File description\n`;
-        fileDoc += ' * \n';
-        fileDoc += ' * This file contains functionality for...\n';
-        fileDoc += ' */\n\n';
-      } else if (language === 'python') {
-        fileDoc = '"""\n';
-        fileDoc += 'File description\n\n';
-        fileDoc += 'This file contains functionality for...\n';
-        fileDoc += '"""\n\n';
-      } else {
-        fileDoc = '// File description\n';
-        fileDoc += '// This file contains functionality for...\n\n';
-      }
-      
-      documentedCode = fileDoc + code;
-    }
-    
-    return documentedCode;
   }
 
   async validateFunctionalEquivalence(originalCode: string, improvedCode: string, language: string, modelId?: string): Promise<{
