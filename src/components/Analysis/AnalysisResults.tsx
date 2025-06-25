@@ -9,16 +9,22 @@ import {
   Download, 
   Copy, 
   Check, 
-  Shield, 
-  Zap, 
-  Eye, 
-  Wrench, 
-  BarChart3, 
-  Brain, 
-  Sparkles 
+  Code2, 
+  FileCode, 
+  Database,
+  Shield,
+  Zap,
+  Eye,
+  Wrench,
+  BarChart3,
+  Brain,
+  Sparkles,
+  Play
 } from 'lucide-react';
 import { AnalysisResult, Issue, QualityMetrics } from '../../types';
 import CodeEditor from '../CodeEditor/CodeEditor';
+import { useCodebase } from '../../contexts/CodebaseContext';
+import toast from 'react-hot-toast';
 
 interface AnalysisResultsProps {
   results: AnalysisResult[];
@@ -31,6 +37,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   onStartImprovement,
   onExportReport,
 }) => {
+  const { updateFileContent } = useCodebase();
   const [selectedFile, setSelectedFile] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'issues' | 'metrics' | 'suggestions'>('overview');
   const [copied, setCopied] = useState(false);
@@ -102,6 +109,19 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       setSelectedSuggestion(null);
     } else {
       setSelectedSuggestion(suggestionId);
+    }
+  };
+
+  const handleApplySuggestion = (suggestion: any) => {
+    if (!selectedFile) return;
+    
+    try {
+      // Update the file content with the suggestion
+      updateFileContent(selectedFile.filePath, suggestion.after);
+      toast.success('Suggestion applied successfully!');
+    } catch (error) {
+      console.error('Failed to apply suggestion:', error);
+      toast.error('Failed to apply suggestion');
     }
   };
 
@@ -657,6 +677,18 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                                   >
                                     ✨ {suggestion.impact}
                                   </motion.p>
+
+                                  <div className="md:col-span-2 mt-2">
+                                    <motion.button
+                                      onClick={() => handleApplySuggestion(suggestion)}
+                                      className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium flex items-center"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                    >
+                                      <Play className="w-4 h-4 mr-2" />
+                                      Apply This Fix
+                                    </motion.button>
+                                  </div>
                                 </motion.div>
                               )}
                             </AnimatePresence>

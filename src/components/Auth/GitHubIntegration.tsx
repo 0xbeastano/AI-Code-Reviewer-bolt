@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Github, GitBranch, Lock, Users, Star, ExternalLink, RefreshCw, CheckCircle } from 'lucide-react';
+import { Github, GitBranch, Lock, Users, Star, ExternalLink, RefreshCw, CheckCircle, Play, AlertTriangle } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { authService } from '../../lib/auth';
+import { codeReviewService } from '../../services/codeReviewService';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
+import { useCodebase } from '../../contexts/CodebaseContext';
 
 interface Repository {
   id: number;
@@ -20,9 +22,11 @@ interface Repository {
 
 export const GitHubIntegration: React.FC = () => {
   const { user } = useAuth();
+  const { setCurrentCodebase, setIsAnalyzing } = useCodebase();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRepos, setSelectedRepos] = useState<Set<number>>(new Set());
+  const [analyzingRepo, setAnalyzingRepo] = useState<number | null>(null);
 
   const isGitHubConnected = user?.provider === 'github' || user?.githubToken;
 
@@ -124,6 +128,59 @@ export const GitHubIntegration: React.FC = () => {
     toast.success(`🚀 Starting analysis for ${selectedRepos.size} repositories`);
     // Navigate to analysis page with selected repositories
     window.location.href = '/review';
+  };
+
+  const simulatePRAnalysis = async (repo: Repository) => {
+    setAnalyzingRepo(repo.id);
+    
+    try {
+      toast.success(`Starting PR simulation for ${repo.name}...`);
+      
+      // Fetch repository content
+      const { content, error } = await authService.getRepositoryContent(
+        repo.full_name.split('/')[0], 
+        repo.name
+      );
+      
+      if (error) {
+        toast.error(`Failed to fetch repository content: ${error}`);
+        return;
+      }
+      
+      // Create a mock codebase from the repository content
+      const mockCodebase = {
+        id: `repo-${repo.id}`,
+        name: repo.name,
+        files: Array.isArray(content) ? content.map((file: any) => ({
+          path: file.path,
+          content: file.content || 'Sample content',
+          language: file.name.split('.').pop() || 'text',
+          size: file.size || 0,
+          lastModified: new Date(file.updated_at || Date.now())
+        })) : [{
+          path: 'sample.js',
+          content: 'console.log("Hello World");',
+          language: 'javascript',
+          size: 25,
+          lastModified: new Date()
+        }],
+        totalSize: Array.isArray(content) ? content.reduce((acc: number, file: any) => acc + (file.size || 0), 0) : 100,
+        uploadedAt: new Date(),
+        status: 'uploaded'
+      };
+      
+      // Set the current codebase
+      setCurrentCodebase(mockCodebase);
+      
+      // Navigate to the review page
+      window.location.href = '/review';
+      
+    } catch (error) {
+      console.error('PR simulation error:', error);
+      toast.error('Failed to simulate PR analysis');
+    } finally {
+      setAnalyzingRepo(null);
+    }
   };
 
   if (!isGitHubConnected) {
@@ -305,7 +362,7 @@ export const GitHubIntegration: React.FC = () => {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white truncate">
+                        <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate">
                           {repo.name}
                         </h4>
                         
@@ -343,21 +400,64 @@ export const GitHubIntegration: React.FC = () => {
                       </div>
                     </div>
                     
-                    <motion.a
-                      href={repo.html_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                      whileHover={{ scale: 1.2, rotate: 10 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </motion.a>
+                    <div className="flex items-center space-x-2">
+                      <motion.button
+                        onClick={() => simulatePRAnalysis(repo)}
+                        disabled={analyzingRepo === repo.id}
+                        className="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded-lg flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: analyzingRepo === repo.id ? 1 : 1.05 }}
+                        whileTap={{ scale: analyzingRepo === repo.id ? 1 : 0.95 }}
+                      >
+                        {analyzingRepo === repo.id ? (
+                          <>
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                            <span>Analyzing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3 h-3" />
+                            <span>Simulate PR</span>
+                          </>
+                        )}
+                      </motion.button>
+                      
+                      <motion.a
+                        href={repo.html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        whileHover={{ scale: 1.2, rotate: 10 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </motion.a>
+                    </div>
                   </div>
                 </motion.div>
               ))}
             </div>
           )}
+        </div>
+      </motion.div>
+
+      {/* PR Simulation Info */}
+      <motion.div 
+        className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="flex items-start space-x-3">
+          <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+          <div>
+            <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-1">
+              About PR Simulation
+            </h4>
+            <p className="text-sm text-blue-600 dark:text-blue-300">
+              The "Simulate PR" button demonstrates how the AI reviewer would analyze code in a pull request workflow. 
+              It fetches repository files and runs them through the AI analysis engine, just like it would in a real CI/CD pipeline.
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>

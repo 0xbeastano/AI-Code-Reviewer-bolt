@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Codebase, AnalysisResult, ReviewConfig, ReviewReport } from '../types';
+import { Codebase, AnalysisResult, ReviewConfig, ReviewReport, CodeFile } from '../types';
 
 interface CodebaseContextType {
   currentCodebase: Codebase | null;
@@ -13,6 +13,7 @@ interface CodebaseContextType {
   setReviewReport: (report: ReviewReport | null) => void;
   setIsAnalyzing: (analyzing: boolean) => void;
   resetAnalysis: () => void;
+  updateFileContent: (filePath: string, newContent: string) => void;
 }
 
 const CodebaseContext = createContext<CodebaseContextType | undefined>(undefined);
@@ -60,6 +61,24 @@ export const CodebaseProvider: React.FC<CodebaseProviderProps> = ({ children }) 
     setIsAnalyzing(false);
   }, []);
 
+  const updateFileContent = useCallback((filePath: string, newContent: string) => {
+    setCurrentCodebase(prevCodebase => {
+      if (!prevCodebase) return null;
+      
+      const updatedFiles = prevCodebase.files.map(file => {
+        if (file.path === filePath) {
+          return { ...file, content: newContent };
+        }
+        return file;
+      });
+      
+      return {
+        ...prevCodebase,
+        files: updatedFiles
+      };
+    });
+  }, []);
+
   return (
     <CodebaseContext.Provider
       value={{
@@ -74,6 +93,7 @@ export const CodebaseProvider: React.FC<CodebaseProviderProps> = ({ children }) 
         setReviewReport,
         setIsAnalyzing,
         resetAnalysis,
+        updateFileContent,
       }}
     >
       {children}

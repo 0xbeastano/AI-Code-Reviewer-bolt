@@ -68,7 +68,7 @@ export class AIService {
     try {
       console.log(`🔄 Starting ${selectedModel} analysis for ${filePath}`);
       
-      // Create the prompt for code analysis
+      // Create the prompt for code analysis with enhanced security focus
       const prompt = `
 You are an expert code reviewer and software engineer with deep expertise in ${language}. Analyze this code file (${filePath}) and provide comprehensive feedback.
 
@@ -115,11 +115,26 @@ Please provide a detailed analysis in JSON format with the following structure:
 
 Focus on:
 1. Security vulnerabilities (XSS, SQL injection, authentication issues, input validation)
+   - For security issues, provide DETAILED remediation steps with specific code examples
+   - Include complete, production-ready code in the "after" field that directly fixes the vulnerability
+   - Explain the security impact and potential exploitation scenarios
+   - Reference relevant security standards (OWASP, CWE) when applicable
+
 2. Performance optimizations (algorithm efficiency, memory usage, async patterns)
+   - Identify specific performance bottlenecks with measurable impact
+   - Provide optimized implementations that maintain the same functionality
+
 3. Code quality (readability, maintainability, best practices, SOLID principles)
+   - Suggest refactorings that improve maintainability without changing behavior
+   - Identify code smells and technical debt with practical solutions
+
 4. Bug detection (logic errors, edge cases, type issues, null pointer exceptions)
+   - Highlight potential runtime errors and edge cases
+   - Provide robust error handling suggestions
+
 5. Style improvements (formatting, naming conventions, code organization)
-6. Modern language features and patterns
+   - Suggest modern language features and patterns
+   - Improve code organization and structure
 
 Provide actionable, specific feedback with clear examples. Be thorough but practical.
 For suggestions, make sure to include actual code snippets from the file in the "before" field and realistic improvements in the "after" field.
@@ -134,7 +149,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
         messages: [
           {
             role: "system",
-            content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable. Always include real code snippets from the provided code in your suggestions.`
+            content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable. Always include real code snippets from the provided code in your suggestions. For security vulnerabilities, provide detailed, production-ready fixes that completely address the issue.`
           },
           {
             role: "user",
@@ -297,31 +312,51 @@ For suggestions, make sure to include actual code snippets from the file in the 
   }
 
   private calculateSecurityScore(code: string, language: string): number {
-    // Basic security score calculation
+    // Enhanced security score calculation with more detailed checks
     let securityScore = 85; // Base security score
     
-    // Check for common security issues
+    // Check for common security issues with more detailed patterns
     const securityIssues = [
-      'eval(', 'exec(', 'innerHTML', 'document.write', 
-      'sql', 'query', 'password', 'token', 'auth', 
-      'xhr', 'fetch', 'http', 'url', 'parse'
+      { pattern: /eval\s*\(/, penalty: 20, critical: true },
+      { pattern: /exec\s*\(/, penalty: 20, critical: true },
+      { pattern: /innerHTML\s*=/, penalty: 15, critical: false },
+      { pattern: /document\.write\s*\(/, penalty: 15, critical: false },
+      { pattern: /sql.*\+.*(?:req|request|input|param)/, penalty: 20, critical: true }, // SQL injection
+      { pattern: /password.*=.*['"]/, penalty: 10, critical: false }, // Hardcoded passwords
+      { pattern: /token.*=.*['"]/, penalty: 10, critical: false }, // Hardcoded tokens
+      { pattern: /auth.*=.*['"]/, penalty: 10, critical: false }, // Hardcoded auth
+      { pattern: /\.createServer\s*\(\s*http\s*\)/, penalty: 10, critical: false }, // Insecure HTTP
+      { pattern: /\.parse\s*\(\s*(?:req|request|input|param)/, penalty: 5, critical: false }, // Potential JSON parsing issues
+      { pattern: /\.exec\s*\(\s*(?:req|request|input|param)/, penalty: 15, critical: true }, // Command injection
+      { pattern: /\.load\s*\(\s*(?:req|request|input|param)/, penalty: 10, critical: false }, // Unsafe loading
+      { pattern: /\.include\s*\(\s*(?:req|request|input|param)/, penalty: 10, critical: false }, // Unsafe inclusion
     ];
     
-    let issueCount = 0;
+    let criticalIssuesFound = 0;
+    
     for (const issue of securityIssues) {
-      if (code.includes(issue)) {
-        issueCount++;
+      if (issue.pattern.test(code)) {
+        securityScore -= issue.penalty;
+        if (issue.critical) criticalIssuesFound++;
       }
     }
-    
-    securityScore -= issueCount * 3;
     
     // Check for input validation
-    if (code.includes('input') || code.includes('param') || code.includes('req.body')) {
-      if (!code.includes('validate') && !code.includes('sanitize')) {
-        securityScore -= 10;
-      }
+    if ((code.includes('input') || code.includes('param') || code.includes('req.body')) && 
+        !(code.includes('validate') || code.includes('sanitize') || code.includes('escape'))) {
+      securityScore -= 10;
     }
+    
+    // Severe penalty for critical issues
+    if (criticalIssuesFound > 0) {
+      securityScore -= criticalIssuesFound * 10;
+    }
+    
+    // Bonus for security best practices
+    if (code.includes('https') && !code.includes('http:')) securityScore += 5;
+    if (code.includes('Content-Security-Policy')) securityScore += 5;
+    if (code.includes('X-XSS-Protection')) securityScore += 3;
+    if (code.includes('helmet') || code.includes('Helmet')) securityScore += 5;
     
     return Math.min(100, Math.max(0, securityScore));
   }
@@ -371,7 +406,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
       const line = lines[i];
       const lineNumber = i + 1;
       
-      // Security issues
+      // Security issues - Enhanced with more detailed suggestions
       if (line.includes('eval(') || line.includes('new Function(')) {
         issues.push({
           id: `security-eval-${lineNumber}`,
@@ -381,7 +416,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
           column: line.indexOf('eval(') > -1 ? line.indexOf('eval(') + 1 : line.indexOf('new Function(') + 1,
           message: 'Use of eval() or new Function() is a security risk',
           rule: 'no-eval',
-          suggestion: 'Avoid using eval() or new Function() as they can execute arbitrary code'
+          suggestion: 'Replace eval() with safer alternatives like JSON.parse() for data parsing or a proper template system for dynamic content generation. This prevents code injection attacks.'
         });
       }
       
@@ -394,7 +429,21 @@ For suggestions, make sure to include actual code snippets from the file in the 
           column: line.indexOf('innerHTML') > -1 ? line.indexOf('innerHTML') + 1 : line.indexOf('document.write') + 1,
           message: 'Potential XSS vulnerability',
           rule: 'no-innerHTML',
-          suggestion: 'Use textContent or innerText instead of innerHTML to prevent XSS attacks'
+          suggestion: 'Use textContent or innerText instead of innerHTML, or implement proper HTML sanitization using a library like DOMPurify. This prevents cross-site scripting (XSS) attacks by ensuring user input cannot execute as code.'
+        });
+      }
+      
+      // SQL Injection checks
+      if (line.match(/(?:query|sql|db\.execute|connection\.query).*\+.*(?:req|request|input|param)/i)) {
+        issues.push({
+          id: `security-sqli-${lineNumber}`,
+          type: 'security',
+          severity: 'critical',
+          line: lineNumber,
+          column: 1,
+          message: 'Potential SQL Injection vulnerability',
+          rule: 'no-sql-injection',
+          suggestion: 'Use parameterized queries or prepared statements instead of string concatenation. This ensures user input is properly escaped and cannot alter the structure of your SQL query.'
         });
       }
       
@@ -408,7 +457,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
           column: line.indexOf('for') + 1,
           message: 'Array length accessed in each loop iteration',
           rule: 'optimize-loops',
-          suggestion: 'Cache the array length before the loop to improve performance'
+          suggestion: 'Cache the array length before the loop to improve performance: const length = array.length; for (let i = 0; i < length; i++)'
         });
       }
       
@@ -422,7 +471,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
           column: line.indexOf('var ') + 1,
           message: 'Use of var keyword',
           rule: 'no-var',
-          suggestion: 'Use let or const instead of var for better scoping'
+          suggestion: 'Use let or const instead of var for better scoping and to avoid hoisting-related bugs'
         });
       }
       
@@ -515,7 +564,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
     const styleIssues = issues.filter(issue => issue.type === 'style');
     const bugIssues = issues.filter(issue => issue.type === 'bug');
     
-    // Generate security suggestions
+    // Generate security suggestions with enhanced detail
     if (securityIssues.length > 0) {
       // Find a representative issue for the suggestion
       const issue = securityIssues[0];
@@ -533,12 +582,53 @@ For suggestions, make sure to include actual code snippets from the file in the 
         before += lines[i] + '\n';
       }
       
-      // Create improved version
+      // Create improved version with detailed security fixes
       after = before;
       if (issue.rule === 'no-eval') {
-        after = after.replace(/eval\s*\((.*?)\)/g, 'JSON.parse($1)');
+        // More comprehensive fix for eval
+        if (before.includes('eval(')) {
+          after = after.replace(/eval\s*\((.*?)\)/g, (match, p1) => {
+            if (p1.includes('JSON')) {
+              return `JSON.parse(${p1})`;
+            } else {
+              return `// SECURITY: eval() replaced with safer alternative
+// If you need to parse JSON:
+JSON.parse(${p1})
+// If you need to execute a function by name:
+// const functionName = ${p1};
+// const safeFunction = allowedFunctions[functionName];
+// if (safeFunction) safeFunction();`;
+            }
+          });
+        }
       } else if (issue.rule === 'no-innerHTML') {
-        after = after.replace(/\.innerHTML\s*=\s*(.*?);/g, '.textContent = $1;');
+        // More comprehensive fix for innerHTML
+        after = after.replace(/\.innerHTML\s*=\s*(.*?);/g, (match, p1) => {
+          return `// SECURITY: innerHTML replaced with safer textContent
+// For plain text:
+.textContent = ${p1};
+// If you need to sanitize HTML:
+// import DOMPurify from 'dompurify';
+// element.innerHTML = DOMPurify.sanitize(${p1});`;
+        });
+      } else if (issue.rule === 'no-sql-injection') {
+        // Comprehensive fix for SQL injection
+        after = after.replace(/(query|sql|db\.execute|connection\.query).*\+.*(?:req|request|input|param)/i, (match) => {
+          if (language === 'javascript' || language === 'typescript') {
+            return `// SECURITY: SQL query rewritten to use parameterized query
+const query = 'SELECT * FROM users WHERE username = ?';
+db.query(query, [req.body.username]);`;
+          } else if (language === 'python') {
+            return `# SECURITY: SQL query rewritten to use parameterized query
+query = "SELECT * FROM users WHERE username = %s"
+cursor.execute(query, (username,))`;
+          } else {
+            return `// SECURITY: Replace string concatenation with parameterized queries
+// Example: 
+// const query = 'SELECT * FROM users WHERE username = ?';
+// db.query(query, [username]);`;
+          }
+        });
       }
       
       suggestions.push({
@@ -548,7 +638,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
         description: `Fix ${issue.severity} security issue: ${issue.message}`,
         before: before.trim(),
         after: after.trim(),
-        impact: 'Improves application security by preventing potential vulnerabilities'
+        impact: 'Improves application security by preventing potential vulnerabilities that could lead to data breaches or system compromise'
       });
     }
     
@@ -585,7 +675,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
         description: `Optimize code performance: ${issue.message}`,
         before: before.trim(),
         after: after.trim(),
-        impact: 'Improves code execution speed and reduces resource usage'
+        impact: 'Improves code execution speed and reduces resource usage, especially important for loops that run many times'
       });
     }
     
@@ -624,7 +714,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
         description: `Improve code style: ${issue.message}`,
         before: before.trim(),
         after: after.trim(),
-        impact: 'Enhances code readability and maintainability'
+        impact: 'Enhances code readability and maintainability, making it easier for team members to understand and modify'
       });
     }
     
@@ -662,7 +752,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
         description: `Fix potential bug: ${issue.message}`,
         before: before.trim(),
         after: after.trim(),
-        impact: 'Prevents potential runtime errors and improves code reliability'
+        impact: 'Prevents potential runtime errors and improves code reliability by fixing issues that could cause unexpected behavior'
       });
     }
     
@@ -723,7 +813,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
           description: 'Add function documentation',
           before: before.trim(),
           after: after.trim(),
-          impact: 'Improves code maintainability and helps other developers understand the code'
+          impact: 'Improves code maintainability and helps other developers understand the code purpose and usage'
         });
       }
     }

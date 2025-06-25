@@ -573,6 +573,40 @@ class CodeReviewService {
     }
   }
 
+  // New method to analyze a GitHub repository
+  async analyzeRepository(owner: string, repo: string, config: any, onProgress?: (progress: number) => void): Promise<AnalysisResult[]> {
+    try {
+      // Fetch repository content
+      const { content, error } = await authService.getRepositoryContent(owner, repo);
+      
+      if (error) {
+        throw new Error(`Failed to fetch repository content: ${error}`);
+      }
+      
+      // Create a codebase from the repository content
+      const codebase: Codebase = {
+        id: `github-${owner}-${repo}-${Date.now()}`,
+        name: repo,
+        files: Array.isArray(content) ? content.map((file: any) => ({
+          path: file.path,
+          content: file.content || 'Sample content',
+          language: file.name.split('.').pop() || 'text',
+          size: file.size || 0,
+          lastModified: new Date(file.updated_at || Date.now())
+        })) : [],
+        totalSize: Array.isArray(content) ? content.reduce((acc: number, file: any) => acc + (file.size || 0), 0) : 0,
+        uploadedAt: new Date(),
+        status: 'uploaded'
+      };
+      
+      // Analyze the codebase
+      return this.analyzeCode(codebase, config, onProgress);
+    } catch (error) {
+      console.error('Repository analysis failed:', error);
+      throw error;
+    }
+  }
+
   async getReviewStatus(reviewId: string): Promise<CodeReviewResult> {
     try {
       if (isDemoMode() || !supabase) {
