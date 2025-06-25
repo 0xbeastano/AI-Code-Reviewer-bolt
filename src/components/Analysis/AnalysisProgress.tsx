@@ -48,16 +48,25 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
   // Simulate real-time analysis updates
   useEffect(() => {
     const interval = setInterval(() => {
-      setRealTimeStats(prev => ({
-        issuesFound: Math.min(prev.issuesFound + Math.floor(Math.random() * 3), 47),
-        securityVulns: Math.min(prev.securityVulns + Math.floor(Math.random() * 2), 8),
-        performanceGains: Math.min(prev.performanceGains + Math.floor(Math.random() * 2), 23),
-        qualityScore: Math.min(prev.qualityScore + Math.floor(Math.random() * 3), 87)
-      }));
+      setRealTimeStats(prev => {
+        // Calculate realistic increments based on progress
+        const progressFactor = progress / 100;
+        const maxIssues = Math.floor(45 * progressFactor);
+        const maxVulns = Math.floor(8 * progressFactor);
+        const maxPerf = Math.floor(25 * progressFactor);
+        const maxQuality = Math.floor(90 * progressFactor);
+        
+        return {
+          issuesFound: Math.min(prev.issuesFound + Math.floor(Math.random() * 3), maxIssues),
+          securityVulns: Math.min(prev.securityVulns + Math.floor(Math.random() * 2), maxVulns),
+          performanceGains: Math.min(prev.performanceGains + Math.floor(Math.random() * 2), maxPerf),
+          qualityScore: Math.min(prev.qualityScore + Math.floor(Math.random() * 3), maxQuality)
+        };
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [progress]);
 
   // Auto-complete when progress reaches 100%
   useEffect(() => {

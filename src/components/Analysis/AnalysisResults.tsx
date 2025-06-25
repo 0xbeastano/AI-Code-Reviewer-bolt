@@ -18,6 +18,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   const [selectedFile, setSelectedFile] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'issues' | 'metrics' | 'suggestions'>('overview');
   const [copied, setCopied] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
 
   const totalIssues = results.reduce((acc, result) => acc + result.issues.length, 0);
   const criticalIssues = results.reduce((acc, result) => 
@@ -64,9 +65,22 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     }
   };
 
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
+  const toggleSuggestion = (suggestionId: string) => {
+    if (selectedSuggestion === suggestionId) {
+      setSelectedSuggestion(null);
+    } else {
+      setSelectedSuggestion(suggestionId);
+    }
   };
 
   return (
@@ -414,7 +428,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                           {Object.entries(selectedFile.metrics).map(([key, value], index) => (
                             <motion.div 
                               key={key} 
-                              className="flex justify-between items-center"
+                              className="flex items-center justify-between"
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: index * 0.05 + 0.2 }}
@@ -553,57 +567,74 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                                   </span>
                                 </div>
                               </div>
+                              <motion.button
+                                onClick={() => toggleSuggestion(suggestion.id)}
+                                className="px-3 py-1 text-xs bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded-lg"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                {selectedSuggestion === suggestion.id ? 'Hide' : 'View'}
+                              </motion.button>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Before</p>
-                                <div className="relative">
-                                  <CodeEditor
-                                    value={suggestion.before}
-                                    language="javascript"
-                                    height="80px"
-                                    readOnly
-                                  />
-                                  <motion.button
-                                    onClick={handleCopy}
-                                    className="absolute top-2 right-2 p-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
+                            <AnimatePresence>
+                              {selectedSuggestion === suggestion.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                                >
+                                  <div>
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Before</p>
+                                    <div className="relative">
+                                      <CodeEditor
+                                        value={suggestion.before}
+                                        language={selectedFile.filePath.split('.').pop() || 'javascript'}
+                                        height="80px"
+                                        readOnly
+                                      />
+                                      <motion.button
+                                        onClick={() => handleCopy(suggestion.before)}
+                                        className="absolute top-2 right-2 p-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                      >
+                                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                      </motion.button>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">After</p>
+                                    <div className="relative">
+                                      <CodeEditor
+                                        value={suggestion.after}
+                                        language={selectedFile.filePath.split('.').pop() || 'javascript'}
+                                        height="80px"
+                                        readOnly
+                                      />
+                                      <motion.button
+                                        onClick={() => handleCopy(suggestion.after)}
+                                        className="absolute top-2 right-2 p-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                      >
+                                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                      </motion.button>
+                                    </div>
+                                  </div>
+                                  
+                                  <motion.p 
+                                    className="text-sm text-green-600 dark:text-green-400 mt-3 md:col-span-2"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
                                   >
-                                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                  </motion.button>
-                                </div>
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">After</p>
-                                <div className="relative">
-                                  <CodeEditor
-                                    value={suggestion.after}
-                                    language="javascript"
-                                    height="80px"
-                                    readOnly
-                                  />
-                                  <motion.button
-                                    onClick={handleCopy}
-                                    className="absolute top-2 right-2 p-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                  >
-                                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                  </motion.button>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <motion.p 
-                              className="text-sm text-green-600 dark:text-green-400 mt-3"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.3 }}
-                            >
-                              ✨ {suggestion.impact}
-                            </motion.p>
+                                    ✨ {suggestion.impact}
+                                  </motion.p>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </motion.div>
                         ))
                       ) : (

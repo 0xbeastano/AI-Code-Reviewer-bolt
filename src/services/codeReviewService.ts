@@ -460,13 +460,13 @@ class CodeReviewService {
     try {
       const user = authService.getCurrentUser();
       
-      // Start analysis for each file
-      const results: AnalysisResult[] = [];
-      const totalFiles = codebase.files.length;
-      
       // Simulate initial delay for setup
       await new Promise(resolve => setTimeout(resolve, 1000));
       if (onProgress) onProgress(5);
+      
+      // Start analysis for each file
+      const results: AnalysisResult[] = [];
+      const totalFiles = codebase.files.length;
       
       for (let i = 0; i < totalFiles; i++) {
         const file = codebase.files[i];

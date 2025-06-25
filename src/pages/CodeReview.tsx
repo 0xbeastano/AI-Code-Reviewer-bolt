@@ -31,9 +31,10 @@ const CodeReview: React.FC = () => {
     analysisResults, 
     reviewConfig, 
     isAnalyzing,
+    setCurrentCodebase,
+    setAnalysisResults,
     setReviewConfig,
-    setIsAnalyzing,
-    setAnalysisResults
+    setIsAnalyzing
   } = useCodebase();
   
   const { currentStep, canGoBack, navigateToStep, goBack } = useNavigation();
