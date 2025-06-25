@@ -1,6 +1,22 @@
-import React, { useState } from 'react';
-import { FileText, AlertTriangle, CheckCircle, Clock, TrendingUp, Download, Copy, Check, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  FileText, 
+  AlertTriangle, 
+  CheckCircle, 
+  Clock, 
+  TrendingUp, 
+  Download, 
+  Copy, 
+  Check, 
+  Shield, 
+  Zap, 
+  Eye, 
+  Wrench, 
+  BarChart3, 
+  Brain, 
+  Sparkles 
+} from 'lucide-react';
 import { AnalysisResult, Issue, QualityMetrics } from '../../types';
 import CodeEditor from '../CodeEditor/CodeEditor';
 
@@ -44,6 +60,12 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         Math.round((averageMetrics[key as keyof QualityMetrics] as number) / results.length);
     }
   });
+
+  useEffect(() => {
+    if (results.length > 0 && !selectedFile) {
+      setSelectedFile(results[0]);
+    }
+  }, [results, selectedFile]);
 
   const getMetricColor = (value: number, reverse = false) => {
     if (reverse) {
@@ -130,12 +152,12 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Files Analyzed</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Files Processed</p>
               <motion.p 
                 className="text-2xl font-bold text-gray-900 dark:text-white"
                 initial={{ scale: 0.5 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10, delay: 0.2 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 {results.length}
               </motion.p>
@@ -271,13 +293,13 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             {results.map((result, index) => (
               <motion.button
                 key={result.fileId}
-                className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 transition-colors ${
-                  selectedFile?.fileId === result.fileId ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                }`}
-                onClick={() => setSelectedFile(result)}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 * index + 0.5 }}
+                onClick={() => setSelectedFile(result)}
+                className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                  selectedFile?.fileId === result.fileId ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                }`}
                 whileHover={{ x: 4 }}
               >
                 <div className="flex items-center justify-between">
@@ -290,7 +312,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                   <div className="flex items-center space-x-2">
                     {result.issues.length > 0 && (
                       <motion.span 
-                        className="px-2 py-1 text-xs bg-warning-100 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400 rounded"
+                        className="px-2 py-1 text-xs font-medium rounded bg-warning-100 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400"
                         whileHover={{ scale: 1.1 }}
                       >
                         {result.issues.length}
@@ -370,7 +392,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                           <div className="mt-2 flex space-x-2">
                             {selectedFile.issues.filter(i => i.severity === 'critical').length > 0 && (
                               <motion.span 
-                                className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-full"
+                                className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.2 }}
@@ -380,7 +402,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                             )}
                             {selectedFile.issues.filter(i => i.severity === 'high').length > 0 && (
                               <motion.span 
-                                className="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 rounded-full"
+                                className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400"
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.3 }}
@@ -410,7 +432,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                           <div className="mt-2 flex space-x-2">
                             {selectedFile.suggestions.filter(s => s.priority === 'high').length > 0 && (
                               <motion.span 
-                                className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-full"
+                                className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.4 }}
@@ -428,7 +450,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                           {Object.entries(selectedFile.metrics).map(([key, value], index) => (
                             <motion.div 
                               key={key} 
-                              className="flex items-center justify-between"
+                              className="flex justify-between items-center"
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: index * 0.05 + 0.2 }}
@@ -544,28 +566,23 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                               boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" 
                             }}
                           >
-                            <div className="flex items-start justify-between mb-3">
-                              <div>
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {suggestion.description}
-                                </h4>
-                                <div className="flex items-center space-x-2 mt-1">
-                                  <motion.span 
-                                    className={`px-2 py-1 text-xs font-medium rounded ${
-                                      suggestion.priority === 'high' 
-                                        ? 'bg-error-100 dark:bg-error-900/20 text-error-700 dark:text-error-400'
-                                        : suggestion.priority === 'medium'
-                                        ? 'bg-warning-100 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400'
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
-                                    }`}
-                                    whileHover={{ scale: 1.1 }}
-                                  >
-                                    {suggestion.priority.toUpperCase()}
-                                  </motion.span>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {suggestion.type}
-                                  </span>
-                                </div>
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-2">
+                                <motion.span 
+                                  className={`px-2 py-1 text-xs font-medium rounded ${
+                                    suggestion.priority === 'high' 
+                                      ? 'bg-error-100 dark:bg-error-900/20 text-error-700 dark:text-error-400'
+                                      : suggestion.priority === 'medium'
+                                      ? 'bg-warning-100 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
+                                  }`}
+                                  whileHover={{ scale: 1.1 }}
+                                >
+                                  {suggestion.priority.toUpperCase()}
+                                </motion.span>
+                                <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+                                  {suggestion.type}
+                                </span>
                               </div>
                               <motion.button
                                 onClick={() => toggleSuggestion(suggestion.id)}
@@ -577,13 +594,21 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                               </motion.button>
                             </div>
                             
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-medium text-gray-900 dark:text-white">
+                                  {suggestion.description}
+                                </h4>
+                              </div>
+                            </div>
+                            
                             <AnimatePresence>
                               {selectedSuggestion === suggestion.id && (
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
                                   exit={{ opacity: 0, height: 0 }}
-                                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                                  className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"
                                 >
                                   <div>
                                     <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Before</p>
@@ -661,7 +686,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[
                           { name: 'Security', value: selectedFile.metrics.security, color: 'green', icon: Shield },
-                          { name: 'Performance', value: selectedFile.metrics.performance, color: 'blue', icon: TrendingUp },
+                          { name: 'Performance', value: selectedFile.metrics.performance, color: 'blue', icon: Zap },
                           { name: 'Maintainability', value: selectedFile.metrics.maintainability, color: 'purple', icon: CheckCircle },
                           { name: 'Complexity', value: selectedFile.metrics.complexity, color: 'yellow', icon: AlertTriangle, reverse: true }
                         ].map((metric, index) => (
@@ -783,9 +808,6 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
           className="flex items-center px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium rounded-lg transition-colors duration-200"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
         >
           <Download className="w-5 h-5 mr-2" />
           Export Report
@@ -795,9 +817,6 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
           className="flex items-center px-8 py-3 bg-gradient-ai hover:opacity-90 text-white font-medium rounded-lg transition-colors duration-200"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
         >
           <TrendingUp className="w-5 h-5 mr-2" />
           Improve Codebase

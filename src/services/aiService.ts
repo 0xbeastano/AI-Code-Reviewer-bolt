@@ -21,7 +21,7 @@ export class AIService {
         console.error('Failed to initialize OpenAI client:', error);
       }
     } else {
-      console.log('🔄 OpenAI API key not configured, using mock responses');
+      console.log('🔄 OpenAI API key not configured, using intelligent mock responses');
     }
   }
 
@@ -748,7 +748,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
       let blockEnd = -1;
       
       for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes('function ') || lines[i].match(/^\s*def\s+/) || lines[i].includes('class ')) {
+        if (lines[i].includes('function ') || lines[i].match(/^\s*def\s+/)  || lines[i].includes('class ')) {
           blockStart = i;
           break;
         }
@@ -872,6 +872,7 @@ Return the fully documented code.
   private generateIntelligentDocumentation(code: string, language: string): string {
     const lines = code.split('\n');
     let documentedCode = '';
+    const fileName = '';
     
     // Identify functions and classes
     const functionRegex = language === 'python' 

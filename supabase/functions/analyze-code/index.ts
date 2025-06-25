@@ -29,7 +29,7 @@ serve(async (req) => {
     const openai = new OpenAIApi(configuration);
 
     // Parse request
-    const { code, language, filePath, reviewId, userId, modelId } = await req.json();
+    const { code, language, filePath, modelId, userId, generateImprovedCode } = await req.json();
 
     if (!code || !language || !filePath || !userId) {
       return new Response(
@@ -39,15 +39,6 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
-    }
-
-    // Update review status to running
-    if (reviewId) {
-      await supabase
-        .from("code_reviews")
-        .update({ status: "running" })
-        .eq("id", reviewId)
-        .eq("user_id", userId);
     }
 
     // Analyze code with OpenAI
@@ -93,7 +84,7 @@ Please provide a detailed analysis in JSON format with the following structure:
     "coverage": number (0-100, estimated test coverage),
     "duplicateLines": number,
     "linesOfCode": number
-  }
+  }${generateImprovedCode ? ',\n  "improvedCode": "full improved version of the code"' : ''}
 }
 
 Focus on:
@@ -105,6 +96,7 @@ Focus on:
 6. Modern language features and patterns
 
 Provide actionable, specific feedback with clear examples. Be thorough but practical.
+For suggestions, make sure to include actual code snippets from the file in the "before" field and realistic improvements in the "after" field.
 `;
 
     const response = await openai.createChatCompletion({
@@ -112,7 +104,7 @@ Provide actionable, specific feedback with clear examples. Be thorough but pract
       messages: [
         {
           role: "system",
-          content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable.`
+          content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable. Always include actual code snippets from the provided code in your suggestions.`
         },
         {
           role: "user",
@@ -136,17 +128,20 @@ Provide actionable, specific feedback with clear examples. Be thorough but pract
 
     const analysis = JSON.parse(jsonMatch[0]);
 
-    // Update review with analysis results
-    if (reviewId) {
-      await supabase
-        .from("code_reviews")
-        .update({
-          analysis_results: analysis,
-          status: "completed",
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", reviewId)
-        .eq("user_id", userId);
+    // Save analysis to Supabase
+    const { data, error } = await supabase
+      .from("code_analyses")
+      .insert({
+        user_id: userId,
+        file_path: filePath,
+        language: language,
+        model: modelId,
+        analysis_results: analysis,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error("Error saving analysis to Supabase:", error);
     }
 
     return new Response(
