@@ -37,11 +37,8 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   
   const handleStartAnalysis = () => {
     setIsLoading(true);
-    // Simulate loading
-    setTimeout(() => {
-      setIsLoading(false);
-      onStartAnalysis();
-    }, 1000);
+    // We'll let the parent component handle the actual analysis
+    onStartAnalysis();
   };
 
   return (

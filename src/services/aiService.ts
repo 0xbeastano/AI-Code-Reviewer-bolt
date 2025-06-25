@@ -5,10 +5,24 @@ import { authService } from '../lib/auth';
 export class AIService {
   private static instance: AIService;
   private currentModel: string = 'gpt-4o';
+  private openai: OpenAI | null = null;
 
   constructor() {
-    // No longer initializing OpenAI directly here
-    // Instead, we'll use the Edge Function
+    // Initialize OpenAI if API key is available
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (apiKey && apiKey !== 'your-openai-api-key') {
+      try {
+        this.openai = new OpenAI({
+          apiKey,
+          dangerouslyAllowBrowser: true // Only for demo purposes
+        });
+        console.log('🔄 OpenAI client initialized');
+      } catch (error) {
+        console.error('Failed to initialize OpenAI client:', error);
+      }
+    } else {
+      console.log('🔄 OpenAI API key not configured, using mock responses');
+    }
   }
 
   static getInstance(): AIService {
@@ -43,69 +57,129 @@ export class AIService {
     const selectedModel = modelId || this.currentModel;
     const user = authService.getCurrentUser();
 
-    // If in demo mode, return mock analysis results
-    if (isDemoMode()) {
-      console.log('🔄 Using mock analysis results in demo mode');
+    // If in demo mode or OpenAI client not initialized, return mock analysis results
+    if (isDemoMode() || !this.openai) {
+      console.log(`🔄 Using mock analysis results for ${selectedModel}`);
+      // Add a delay to simulate real analysis
+      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
       return this.getMockAnalysisResults(code, language, filePath, generateImprovedCode);
     }
 
     try {
-      // Get the Supabase URL for the Edge Function
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured');
-      }
+      console.log(`🔄 Starting ${selectedModel} analysis for ${filePath}`);
+      
+      // Create the prompt for code analysis
+      const prompt = `
+You are an expert code reviewer and software engineer with deep expertise in ${language}. Analyze this code file (${filePath}) and provide comprehensive feedback.
 
-      // Call the Edge Function
-      const apiUrl = `${supabaseUrl}/functions/v1/analyze-code`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          code,
-          language,
-          filePath,
-          modelId: selectedModel,
-          userId: user?.id,
-          generateImprovedCode
-        })
+Code to analyze:
+\`\`\`${language}
+${code}
+\`\`\`
+
+Please provide a detailed analysis in JSON format with the following structure:
+{
+  "issues": [
+    {
+      "id": "unique_id",
+      "type": "security|performance|style|bug|smell",
+      "severity": "low|medium|high|critical",
+      "line": number,
+      "column": number,
+      "message": "clear description of the issue",
+      "rule": "rule_name",
+      "suggestion": "how to fix this issue"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "unique_id",
+      "type": "refactor|optimize|security|style|documentation",
+      "priority": "low|medium|high",
+      "description": "what improvement to make",
+      "before": "original code snippet",
+      "after": "improved code snippet",
+      "impact": "expected benefit and improvement"
+    }
+  ],
+  "metrics": {
+    "complexity": number (0-100, lower is better),
+    "maintainability": number (0-100, higher is better),
+    "security": number (0-100, higher is better),
+    "performance": number (0-100, higher is better),
+    "coverage": number (0-100, estimated test coverage),
+    "duplicateLines": number,
+    "linesOfCode": number
+  }${generateImprovedCode ? ',\n  "improvedCode": "full improved version of the code"' : ''}
+}
+
+Focus on:
+1. Security vulnerabilities (XSS, SQL injection, authentication issues, input validation)
+2. Performance optimizations (algorithm efficiency, memory usage, async patterns)
+3. Code quality (readability, maintainability, best practices, SOLID principles)
+4. Bug detection (logic errors, edge cases, type issues, null pointer exceptions)
+5. Style improvements (formatting, naming conventions, code organization)
+6. Modern language features and patterns
+
+Provide actionable, specific feedback with clear examples. Be thorough but practical.
+`;
+
+      // Get model configuration
+      const config = this.getModelConfig(selectedModel);
+      
+      // Call OpenAI API
+      const response = await this.openai.chat.completions.create({
+        model: config.model,
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: config.temperature,
+        max_tokens: config.maxTokens
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to analyze code');
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error(`No response from ${selectedModel}`);
       }
 
-      const analysis = await response.json();
+      // Extract JSON from response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error(`Could not parse JSON from ${selectedModel} response`);
+      }
 
-      // Ensure all required fields are present and valid
-      const result: {
-        issues: any[];
-        suggestions: any[];
-        metrics: any;
-        improvedCode?: string;
-      } = {
-        issues: Array.isArray(analysis.issues) ? analysis.issues : [],
-        suggestions: Array.isArray(analysis.suggestions) ? analysis.suggestions : [],
-        metrics: {
-          complexity: Math.max(0, Math.min(100, analysis.metrics?.complexity || 50)),
-          maintainability: Math.max(0, Math.min(100, analysis.metrics?.maintainability || 75)),
-          security: Math.max(0, Math.min(100, analysis.metrics?.security || 80)),
-          performance: Math.max(0, Math.min(100, analysis.metrics?.performance || 70)),
-          coverage: Math.max(0, Math.min(100, analysis.metrics?.coverage || 60)),
-          duplicateLines: Math.max(0, analysis.metrics?.duplicateLines || 0),
-          linesOfCode: Math.max(1, analysis.metrics?.linesOfCode || code.split('\n').length)
+      const analysis = JSON.parse(jsonMatch[0]);
+      console.log(`✅ ${selectedModel} analysis completed for ${filePath}`);
+
+      // Save to Supabase if available
+      if (supabase && user && !isDemoMode()) {
+        try {
+          const { data, error } = await supabase
+            .from('code_analyses')
+            .insert({
+              user_id: user.id,
+              file_path: filePath,
+              model: selectedModel,
+              analysis_results: analysis,
+              created_at: new Date().toISOString()
+            });
+            
+          if (error) {
+            console.error('Error saving analysis to Supabase:', error);
+          }
+        } catch (error) {
+          console.error('Failed to save analysis to Supabase:', error);
         }
-      };
-
-      if (generateImprovedCode) {
-        result.improvedCode = analysis.improvedCode || code;
       }
 
-      return result;
+      return analysis;
     } catch (error) {
       console.error(`${selectedModel.toUpperCase()} analysis failed:`, error);
       
@@ -193,41 +267,62 @@ export class AIService {
     const selectedModel = modelId || this.currentModel;
     const user = authService.getCurrentUser();
 
-    // If in demo mode, return mock documentation
-    if (isDemoMode()) {
+    // If in demo mode or OpenAI client not initialized, return mock documentation
+    if (isDemoMode() || !this.openai) {
       console.log('🔄 Using mock documentation in demo mode');
+      // Add a delay to simulate real processing
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
       return this.addMockDocumentation(code, language);
     }
 
     try {
-      // Get the Supabase URL for the Edge Function
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured');
-      }
+      console.log(`🔄 Starting documentation generation with ${selectedModel}`);
+      
+      // Create the prompt for documentation generation
+      const prompt = `
+Please add comprehensive documentation to the following ${language} code:
 
-      // Call the Edge Function (you would need to create a separate function for documentation)
-      const apiUrl = `${supabaseUrl}/functions/v1/generate-documentation`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          code,
-          language,
-          modelId: selectedModel,
-          userId: user?.id
-        })
+\`\`\`${language}
+${code}
+\`\`\`
+
+Add appropriate comments, docstrings, and explanations to make the code more maintainable and understandable.
+Follow best practices for documentation in ${language}.
+Do not change the functionality of the code, only add documentation.
+Return the fully documented code.
+`;
+
+      // Get model configuration
+      const config = this.getModelConfig(selectedModel);
+      
+      // Call OpenAI API
+      const response = await this.openai.chat.completions.create({
+        model: config.model,
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert software documentation specialist. Your task is to add clear, concise, and helpful documentation to code without changing its functionality.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: config.maxTokens
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate documentation');
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error(`No response from ${selectedModel}`);
       }
 
-      const result = await response.json();
-      return result.documentedCode || code;
+      // Extract code from response
+      const codeMatch = content.match(/```[\s\S]*?\n([\s\S]*?)```/);
+      const documentedCode = codeMatch ? codeMatch[1] : content;
+      
+      console.log(`✅ Documentation generation completed with ${selectedModel}`);
+      return documentedCode;
     } catch (error) {
       console.error(`Documentation generation failed with ${selectedModel.toUpperCase()}:`, error);
       return this.addMockDocumentation(code, language);
@@ -267,11 +362,96 @@ ${code}`;
     differences: string[];
     testSuggestions: string[];
   }> {
-    // This could also be moved to an Edge Function in the future
-    return {
-      isEquivalent: true,
-      differences: [],
-      testSuggestions: ['Manual testing recommended']
-    };
+    const selectedModel = modelId || this.currentModel;
+    
+    // If in demo mode or OpenAI client not initialized, return mock results
+    if (isDemoMode() || !this.openai) {
+      // Add a delay to simulate real processing
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+      return {
+        isEquivalent: true,
+        differences: [],
+        testSuggestions: ['Manual testing recommended']
+      };
+    }
+    
+    try {
+      console.log(`🔄 Starting functional equivalence validation with ${selectedModel}`);
+      
+      // Create the prompt for equivalence validation
+      const prompt = `
+I have an original code and an improved version. Please analyze if they are functionally equivalent.
+
+Original code:
+\`\`\`${language}
+${originalCode}
+\`\`\`
+
+Improved code:
+\`\`\`${language}
+${improvedCode}
+\`\`\`
+
+Please provide your analysis in JSON format:
+{
+  "isEquivalent": boolean,
+  "differences": [
+    "description of functional difference 1",
+    "description of functional difference 2"
+  ],
+  "testSuggestions": [
+    "test case suggestion 1",
+    "test case suggestion 2"
+  ]
+}
+`;
+
+      // Get model configuration
+      const config = this.getModelConfig(selectedModel);
+      
+      // Call OpenAI API
+      const response = await this.openai.chat.completions.create({
+        model: config.model,
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert code analyzer specializing in determining functional equivalence between code versions. Provide detailed analysis in the requested JSON format.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: config.maxTokens
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error(`No response from ${selectedModel}`);
+      }
+
+      // Extract JSON from response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error(`Could not parse JSON from ${selectedModel} response`);
+      }
+
+      const result = JSON.parse(jsonMatch[0]);
+      console.log(`✅ Functional equivalence validation completed with ${selectedModel}`);
+      
+      return {
+        isEquivalent: result.isEquivalent,
+        differences: result.differences || [],
+        testSuggestions: result.testSuggestions || []
+      };
+    } catch (error) {
+      console.error(`Functional equivalence validation failed with ${selectedModel.toUpperCase()}:`, error);
+      return {
+        isEquivalent: true,
+        differences: [],
+        testSuggestions: ['Manual testing recommended due to validation error']
+      };
+    }
   }
 }

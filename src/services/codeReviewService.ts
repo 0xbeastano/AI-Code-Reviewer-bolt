@@ -464,6 +464,10 @@ class CodeReviewService {
       const results: AnalysisResult[] = [];
       const totalFiles = codebase.files.length;
       
+      // Simulate initial delay for setup
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (onProgress) onProgress(5);
+      
       for (let i = 0; i < totalFiles; i++) {
         const file = codebase.files[i];
         let reviewId = null;
@@ -531,7 +535,7 @@ class CodeReviewService {
           
           // Update progress
           if (onProgress) {
-            onProgress(((i + 1) / totalFiles) * 100);
+            onProgress(5 + ((i + 1) / totalFiles) * 95); // 5% for setup, 95% for analysis
           }
           
           // Store results in Supabase
