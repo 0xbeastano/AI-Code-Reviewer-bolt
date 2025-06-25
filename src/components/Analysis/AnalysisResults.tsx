@@ -25,6 +25,8 @@ import { AnalysisResult, Issue, QualityMetrics } from '../../types';
 import CodeEditor from '../CodeEditor/CodeEditor';
 import { useCodebase } from '../../contexts/CodebaseContext';
 import toast from 'react-hot-toast';
+import CodeExplainer from '../CodeExplainer/CodeExplainer';
+import TestGenerator from '../TestGenerator/TestGenerator';
 
 interface AnalysisResultsProps {
   results: AnalysisResult[];
@@ -42,6 +44,8 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'issues' | 'metrics' | 'suggestions'>('overview');
   const [copied, setCopied] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
+  const [showExplainer, setShowExplainer] = useState(false);
+  const [showTestGenerator, setShowTestGenerator] = useState(false);
 
   const totalIssues = results.reduce((acc, result) => acc + result.issues.length, 0);
   const criticalIssues = results.reduce((acc, result) => 
@@ -98,9 +102,11 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      toast.success('Copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
+      toast.error('Failed to copy to clipboard');
     }
   };
 
@@ -495,6 +501,84 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                           ))}
                         </div>
                       </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <motion.button
+                          onClick={() => setShowExplainer(true)}
+                          className="flex items-center px-4 py-2 bg-gradient-ai hover:opacity-90 text-white rounded-lg text-sm font-medium"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Brain className="w-4 h-4 mr-2" />
+                          Explain This Code
+                        </motion.button>
+
+                        <motion.button
+                          onClick={() => setShowTestGenerator(true)}
+                          className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Play className="w-4 h-4 mr-2" />
+                          Generate Tests
+                        </motion.button>
+                      </div>
+
+                      {/* Code Explainer Modal */}
+                      <AnimatePresence>
+                        {showExplainer && selectedFile && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                            onClick={() => setShowExplainer(false)}
+                          >
+                            <motion.div
+                              initial={{ scale: 0.9, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.9, opacity: 0 }}
+                              className="w-full max-w-4xl max-h-[90vh] overflow-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <CodeExplainer
+                                code={selectedFile.fileContent || '// File content not available'}
+                                language={selectedFile.filePath.split('.').pop() || 'javascript'}
+                                filePath={selectedFile.filePath}
+                                onClose={() => setShowExplainer(false)}
+                              />
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Test Generator Modal */}
+                      <AnimatePresence>
+                        {showTestGenerator && selectedFile && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                            onClick={() => setShowTestGenerator(false)}
+                          >
+                            <motion.div
+                              initial={{ scale: 0.9, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.9, opacity: 0 }}
+                              className="w-full max-w-4xl max-h-[90vh] overflow-auto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <TestGenerator
+                                code={selectedFile.fileContent || '// File content not available'}
+                                language={selectedFile.filePath.split('.').pop() || 'javascript'}
+                                filePath={selectedFile.filePath}
+                                onClose={() => setShowTestGenerator(false)}
+                              />
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
                   )}
 
@@ -837,7 +921,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       <div className="flex justify-center space-x-4 mt-8">
         <motion.button
           onClick={onExportReport}
-          className="flex items-center px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium rounded-lg transition-colors duration-200"
+          className="flex items-center px-6 py-3 bg-secondary-600 hover:bg-secondary-700 text-white font-medium rounded-lg transition-colors duration-200"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

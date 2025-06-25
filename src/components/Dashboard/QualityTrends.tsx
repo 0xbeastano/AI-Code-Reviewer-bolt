@@ -8,6 +8,11 @@ interface QualityTrendsProps {
     quality: number[];
     security: number[];
     performance: number[];
+    // New expanded metrics
+    maintainability?: number[];
+    complexity?: number[];
+    testCoverage?: number[];
+    documentation?: number[];
   };
 }
 
@@ -23,12 +28,23 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
     );
   }
 
-  const chartData = data.quality.map((quality, index) => ({
-    day: `Day ${index + 1}`,
-    quality,
-    security: data.security[index],
-    performance: data.performance[index]
-  }));
+  // Transform data for chart
+  const chartData = data.quality.map((quality, index) => {
+    const dataPoint: any = {
+      day: `Day ${index + 1}`,
+      quality,
+      security: data.security[index],
+      performance: data.performance[index],
+    };
+    
+    // Add new metrics if available
+    if (data.maintainability) dataPoint.maintainability = data.maintainability[index];
+    if (data.complexity) dataPoint.complexity = data.complexity[index];
+    if (data.testCoverage) dataPoint.testCoverage = data.testCoverage[index];
+    if (data.documentation) dataPoint.documentation = data.documentation[index];
+    
+    return dataPoint;
+  });
 
   return (
     <motion.div
@@ -127,6 +143,48 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
                 animationEasing="ease-in-out"
                 animationBegin={600}
               />
+              {data.maintainability && (
+                <Line 
+                  type="monotone" 
+                  dataKey="maintainability" 
+                  stroke="#8B5CF6" 
+                  strokeWidth={2}
+                  dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
+                  name="Maintainability"
+                  activeDot={{ r: 6, stroke: '#8B5CF6', strokeWidth: 2 }}
+                  animationDuration={1500}
+                  animationEasing="ease-in-out"
+                  animationBegin={900}
+                />
+              )}
+              {data.complexity && (
+                <Line 
+                  type="monotone" 
+                  dataKey="complexity" 
+                  stroke="#EC4899" 
+                  strokeWidth={2}
+                  dot={{ fill: '#EC4899', strokeWidth: 2, r: 4 }}
+                  name="Complexity"
+                  activeDot={{ r: 6, stroke: '#EC4899', strokeWidth: 2 }}
+                  animationDuration={1500}
+                  animationEasing="ease-in-out"
+                  animationBegin={1200}
+                />
+              )}
+              {data.testCoverage && (
+                <Line 
+                  type="monotone" 
+                  dataKey="testCoverage" 
+                  stroke="#06B6D4" 
+                  strokeWidth={2}
+                  dot={{ fill: '#06B6D4', strokeWidth: 2, r: 4 }}
+                  name="Test Coverage"
+                  activeDot={{ r: 6, stroke: '#06B6D4', strokeWidth: 2 }}
+                  animationDuration={1500}
+                  animationEasing="ease-in-out"
+                  animationBegin={1500}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </motion.div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Upload, 
@@ -11,7 +11,9 @@ import {
   Brain,
   Target,
   Zap,
-  Shield
+  Shield,
+  FileCode,
+  Code
 } from 'lucide-react';
 import { useCodebase } from '../contexts/CodebaseContext';
 import { codeReviewService } from '../services/codeReviewService';
@@ -23,6 +25,7 @@ import AIModelSelector from '../components/CodeReview/AIModelSelector';
 import { useNavigation } from '../hooks/useNavigation';
 import StepIndicator from '../components/Navigation/StepIndicator';
 import BackButton from '../components/Navigation/BackButton';
+import CodeReviewPanel from '../components/CodeReview/CodeReviewPanel';
 import toast from 'react-hot-toast';
 
 const CodeReview: React.FC = () => {
@@ -43,6 +46,7 @@ const CodeReview: React.FC = () => {
   const [filesProcessed, setFilesProcessed] = useState(0);
   const [selectedAIModel, setSelectedAIModel] = useState('gpt-4o');
   const [reviewId, setReviewId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   const steps = [
     { id: 'upload', label: 'Upload Code', status: currentStep === 'upload' ? 'current' : currentCodebase ? 'completed' : 'upcoming' },
@@ -50,6 +54,12 @@ const CodeReview: React.FC = () => {
     { id: 'analyzing', label: 'AI Analysis', status: currentStep === 'analyzing' ? 'current' : analysisResults.length > 0 ? 'completed' : 'upcoming' },
     { id: 'results', label: 'Results & Improvements', status: currentStep === 'results' ? 'current' : 'upcoming' }
   ] as const;
+
+  useEffect(() => {
+    if (currentCodebase && currentCodebase.files.length > 0 && !selectedFile) {
+      setSelectedFile(currentCodebase.files[0].path);
+    }
+  }, [currentCodebase, selectedFile]);
 
   const handleStartAnalysis = async () => {
     if (!currentCodebase) {
@@ -94,7 +104,16 @@ const CodeReview: React.FC = () => {
         }
       );
 
-      setAnalysisResults(results);
+      // Add file content to analysis results for easier access
+      const resultsWithContent = results.map(result => {
+        const file = currentCodebase.files.find(f => f.path === result.filePath);
+        return {
+          ...result,
+          fileContent: file?.content
+        };
+      });
+
+      setAnalysisResults(resultsWithContent);
       setIsAnalyzing(false);
       navigateToStep('results' as any);
       
@@ -116,6 +135,54 @@ const CodeReview: React.FC = () => {
 
   const handleExportReport = () => {
     toast.success('📊 Report exported successfully!');
+  };
+
+  const getSelectedFileContent = () => {
+    if (!currentCodebase || !selectedFile) return '';
+    const file = currentCodebase.files.find(f => f.path === selectedFile);
+    return file?.content || '';
+  };
+
+  const getFileLanguage = () => {
+    if (!selectedFile) return 'javascript';
+    const extension = selectedFile.split('.').pop() || '';
+    const languageMap: { [key: string]: string } = {
+      'js': 'javascript',
+      'jsx': 'javascript',
+      'ts': 'typescript',
+      'tsx': 'typescript',
+      'py': 'python',
+      'java': 'java',
+      'c': 'c',
+      'cpp': 'cpp',
+      'cs': 'csharp',
+      'go': 'go',
+      'rb': 'ruby',
+      'php': 'php',
+      'html': 'html',
+      'css': 'css',
+      'json': 'json',
+      'md': 'markdown'
+    };
+    return languageMap[extension] || 'javascript';
+  };
+
+  const getFileIssues = () => {
+    if (!analysisResults.length || !selectedFile) return [];
+    const fileResult = analysisResults.find(r => r.filePath === selectedFile);
+    return fileResult?.issues || [];
+  };
+
+  const getFileSuggestions = () => {
+    if (!analysisResults.length || !selectedFile) return [];
+    const fileResult = analysisResults.find(r => r.filePath === selectedFile);
+    return fileResult?.suggestions || [];
+  };
+
+  const getFileMetrics = () => {
+    if (!analysisResults.length || !selectedFile) return {};
+    const fileResult = analysisResults.find(r => r.filePath === selectedFile);
+    return fileResult?.metrics || {};
   };
 
   return (
@@ -310,6 +377,56 @@ const CodeReview: React.FC = () => {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* File Browser and Code Review Panel (visible when files are uploaded) */}
+      {currentCodebase && currentCodebase.files.length > 0 && currentStep !== 'analyzing' && (
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* File Browser */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                <FileCode className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
+                Files
+              </h3>
+            </div>
+            <div className="max-h-[600px] overflow-y-auto">
+              {currentCodebase.files.map((file, index) => (
+                <button
+                  key={file.path}
+                  onClick={() => setSelectedFile(file.path)}
+                  className={`w-full p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                    selectedFile === file.path ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <FileCode className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {file.path.split('/').pop()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                    {file.path}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Code Review Panel */}
+          <div className="lg:col-span-3">
+            {selectedFile && (
+              <CodeReviewPanel
+                filePath={selectedFile}
+                code={getSelectedFileContent()}
+                language={getFileLanguage()}
+                issues={getFileIssues()}
+                suggestions={getFileSuggestions()}
+                metrics={getFileMetrics()}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

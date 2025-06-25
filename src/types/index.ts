@@ -18,6 +18,7 @@ export interface Codebase {
 export interface AnalysisResult {
   fileId: string;
   filePath: string;
+  fileContent?: string;
   issues: Issue[];
   metrics: QualityMetrics;
   suggestions: Suggestion[];
@@ -42,6 +43,13 @@ export interface QualityMetrics {
   coverage: number;
   duplicateLines: number;
   linesOfCode: number;
+  // New expanded metrics
+  cohesion?: number;
+  coupling?: number;
+  cognitive?: number;
+  documentation?: number;
+  testability?: number;
+  reusability?: number;
 }
 
 export interface Suggestion {
@@ -104,4 +112,22 @@ export interface UploadProgress {
   total: number;
   percentage: number;
   status: string;
+}
+
+export interface CodeExplanation {
+  explanation: string;
+  complexity: string;
+  keyComponents: string[];
+  potentialIssues: string[];
+}
+
+export interface TestGenerationResult {
+  testCode: string;
+  testCases: Array<{
+    description: string;
+    input: string;
+    expectedOutput: string;
+  }>;
+  coverage: number;
+  framework: string;
 }
