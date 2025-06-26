@@ -69,3 +69,5 @@ export const AuthCallback: React.FC = () => {
     </div>
   );
 };
+
+export default AuthCallback;

@@ -73,7 +73,7 @@ export class AuthService {
         email: 'demo@example.com',
         name: 'Demo User',
         avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=random',
-        provider: 'email',
+        provider: 'github',
         emailVerified: true,
         createdAt: new Date(),
         lastLoginAt: new Date(),
@@ -198,21 +198,33 @@ export class AuthService {
     }
 
     // Check if we have a GitHub token from the session
-    if (!this.session?.user.githubToken) {
-      return { repositories: [], error: 'GitHub token not available. Please reconnect your GitHub account.' };
+    if (!supabase) {
+      return { repositories: [], error: 'Supabase client not available' };
     }
 
     try {
-      const octokit = new Octokit({
-        auth: this.session.user.githubToken
-      });
+      // Get the current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        return { repositories: [], error: 'No active session found' };
+      }
+      
+      // Check if the user authenticated with GitHub
+      if (session.provider_token && session.user.app_metadata.provider === 'github') {
+        const octokit = new Octokit({
+          auth: session.provider_token
+        });
 
-      const { data } = await octokit.rest.repos.listForAuthenticatedUser({
-        sort: 'updated',
-        per_page: 100
-      });
+        const { data } = await octokit.rest.repos.listForAuthenticatedUser({
+          sort: 'updated',
+          per_page: 100
+        });
 
-      return { repositories: data, error: null };
+        return { repositories: data, error: null };
+      } else {
+        return { repositories: [], error: 'GitHub token not available. Please connect your GitHub account.' };
+      }
     } catch (error) {
       console.error('GitHub API error:', error);
       return { repositories: [], error: 'Failed to fetch GitHub repositories.' };
@@ -245,79 +257,91 @@ export class AuthService {
       };
     }
 
-    if (!this.session?.user.githubToken) {
-      return { content: null, error: 'GitHub token not available.' };
+    if (!supabase) {
+      return { content: null, error: 'Supabase client not available' };
     }
 
     try {
-      const octokit = new Octokit({
-        auth: this.session.user.githubToken
-      });
+      // Get the current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        return { content: null, error: 'No active session found' };
+      }
+      
+      // Check if the user authenticated with GitHub
+      if (session.provider_token && session.user.app_metadata.provider === 'github') {
+        const octokit = new Octokit({
+          auth: session.provider_token
+        });
 
-      // If path is empty, list repository contents
-      if (!path) {
+        // If path is empty, list repository contents
+        if (!path) {
+          const { data } = await octokit.rest.repos.getContent({
+            owner,
+            repo,
+            path: ''
+          });
+          
+          // If data is an array, it's a directory listing
+          if (Array.isArray(data)) {
+            // For each file, get its content if it's not too large
+            const contentPromises = data.map(async (item) => {
+              if (item.type === 'file' && item.size < 100000) { // Skip files larger than 100KB
+                try {
+                  const fileResponse = await octokit.rest.repos.getContent({
+                    owner,
+                    repo,
+                    path: item.path
+                  });
+                  
+                  const fileData = fileResponse.data as any;
+                  // GitHub API returns content as base64
+                  if (fileData.content && fileData.encoding === 'base64') {
+                    const content = atob(fileData.content.replace(/\n/g, ''));
+                    return { ...item, content };
+                  }
+                  
+                  return item;
+                } catch (error) {
+                  console.error(`Error fetching content for ${item.path}:`, error);
+                  return item;
+                }
+              }
+              return item;
+            });
+            
+            const contentWithData = await Promise.all(contentPromises);
+            return { content: contentWithData, error: null };
+          }
+          
+          // If data is not an array, it's a single file
+          const fileData = data as any;
+          if (fileData.content && fileData.encoding === 'base64') {
+            const content = atob(fileData.content.replace(/\n/g, ''));
+            return { content: { ...fileData, content }, error: null };
+          }
+          
+          return { content: data, error: null };
+        }
+        
+        // If path is specified, get that specific file or directory
         const { data } = await octokit.rest.repos.getContent({
           owner,
           repo,
-          path: ''
+          path
         });
         
-        // If data is an array, it's a directory listing
-        if (Array.isArray(data)) {
-          // For each file, get its content if it's not too large
-          const contentPromises = data.map(async (item) => {
-            if (item.type === 'file' && item.size < 100000) { // Skip files larger than 100KB
-              try {
-                const fileResponse = await octokit.rest.repos.getContent({
-                  owner,
-                  repo,
-                  path: item.path
-                });
-                
-                const fileData = fileResponse.data as any;
-                // GitHub API returns content as base64
-                if (fileData.content && fileData.encoding === 'base64') {
-                  const content = atob(fileData.content.replace(/\n/g, ''));
-                  return { ...item, content };
-                }
-                
-                return item;
-              } catch (error) {
-                console.error(`Error fetching content for ${item.path}:`, error);
-                return item;
-              }
-            }
-            return item;
-          });
-          
-          const contentWithData = await Promise.all(contentPromises);
-          return { content: contentWithData, error: null };
-        }
-        
-        // If data is not an array, it's a single file
-        const fileData = data as any;
-        if (fileData.content && fileData.encoding === 'base64') {
-          const content = atob(fileData.content.replace(/\n/g, ''));
-          return { content: { ...fileData, content }, error: null };
+        // Handle file content
+        if (!Array.isArray(data) && data.type === 'file' && data.content && data.encoding === 'base64') {
+          const content = atob(data.content.replace(/\n/g, ''));
+          return { content: { ...data, content }, error: null };
         }
         
         return { content: data, error: null };
+      } else {
+        return { content: null, error: 'GitHub token not available.' };
       }
-      
-      // If path is specified, get that specific file or directory
-      const { data } = await octokit.rest.repos.getContent({
-        owner,
-        repo,
-        path
-      });
-      
-      // Handle file content
-      if (!Array.isArray(data) && data.type === 'file' && data.content && data.encoding === 'base64') {
-        const content = atob(data.content.replace(/\n/g, ''));
-        return { content: { ...data, content }, error: null };
-      }
-      
-      return { content: data, error: null };
     } catch (error) {
       console.error('GitHub API error:', error);
       return { content: null, error: 'Failed to fetch repository content.' };

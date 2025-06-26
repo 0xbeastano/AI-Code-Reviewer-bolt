@@ -51,7 +51,7 @@ const IntegrationSettings: React.FC = () => {
       setIsLoading(true);
       try {
         // Check if user has GitHub provider or token
-        const isGitHubConnected = user?.provider === 'github' || !!user?.githubToken;
+        const isGitHubConnected = user?.app_metadata?.provider === 'github' || !!user?.user_metadata?.user_name;
         
         if (isGitHubConnected) {
           // Get repository count

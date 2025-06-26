@@ -28,7 +28,7 @@ export const GitHubIntegration: React.FC = () => {
   const [selectedRepos, setSelectedRepos] = useState<Set<number>>(new Set());
   const [analyzingRepo, setAnalyzingRepo] = useState<number | null>(null);
 
-  const isGitHubConnected = user?.provider === 'github' || user?.githubToken;
+  const isGitHubConnected = user?.app_metadata?.provider === 'github' || user?.user_metadata?.user_name;
 
   useEffect(() => {
     if (isGitHubConnected) {
@@ -285,7 +285,7 @@ export const GitHubIntegration: React.FC = () => {
                 GitHub Connected
               </h3>
               <p className="text-sm text-green-600 dark:text-green-300">
-                @{user?.githubUsername || user?.name} • {repositories.length} repositories available
+                @{user?.user_metadata?.user_name || user?.user_metadata?.name || 'github-user'} • {repositories.length} repositories available
               </p>
             </div>
           </div>

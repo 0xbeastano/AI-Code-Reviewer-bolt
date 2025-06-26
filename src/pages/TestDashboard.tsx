@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { testRunner, TestSuite, TestResult } from '../utils/testRunner';
 import { authService } from '../lib/auth';
+import GitHubAuthTest from '../components/TestDashboard/GitHubAuthTest';
 
 const TestDashboard: React.FC = () => {
   const [testSuites, setTestSuites] = useState<TestSuite[]>([]);
@@ -172,6 +173,11 @@ const TestDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* GitHub Auth Test Component */}
+        <div className="mb-8">
+          <GitHubAuthTest />
         </div>
 
         {/* Test Results */}
