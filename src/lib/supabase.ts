@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Demo mode flag - set to false to disable demo mode
-let demoMode = false;
+// Demo mode flag - set to true for testing without Supabase
+let demoMode = true;
 
 // Check if Supabase is properly configured
 const isSupabaseConfigured = supabaseUrl && 
@@ -31,6 +31,7 @@ try {
       }
     });
     console.log('🚀 Supabase client initialized successfully');
+    demoMode = false;
   } else {
     console.warn('⚠️ Supabase configuration missing or invalid, enabling demo mode');
     demoMode = true;
