@@ -51,7 +51,11 @@
     "@octokit/rest": "^20.0.2",
     "@octokit/auth-oauth-app": "^7.0.1",
     "firebase": "^10.7.1",
-    "dompurify": "^3.0.9"
+    "dompurify": "^3.0.9",
+    "y-websocket": "^1.5.3",
+    "y-monaco": "^0.1.5",
+    "y-indexeddb": "^9.0.12",
+    "yjs": "^13.6.11"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",

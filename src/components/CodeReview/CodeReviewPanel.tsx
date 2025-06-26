@@ -9,12 +9,17 @@ import {
   Eye, 
   AlertTriangle, 
   CheckCircle, 
-  Zap 
+  Zap,
+  Users
 } from 'lucide-react';
 import CodeEditor from '../CodeEditor/CodeEditor';
 import CodeExplainer from '../CodeExplainer/CodeExplainer';
 import TestGenerator from '../TestGenerator/TestGenerator';
+import CollaborativeCodeEditor from './CollaborativeCodeEditor';
+import CollaborationButton from '../Collaboration/CollaborationButton';
+import CollaborationPanel from '../Collaboration/CollaborationPanel';
 import { AIService } from '../../services/aiService';
+import { useCollaboration } from '../../contexts/CollaborationContext';
 import toast from 'react-hot-toast';
 
 interface CodeReviewPanelProps {
@@ -38,8 +43,15 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [explanation, setExplanation] = useState<any>(null);
   const [testData, setTestData] = useState<any>(null);
-
+  const [showCollaborationPanel, setShowCollaborationPanel] = useState(false);
+  
+  const { isCollaborating } = useCollaboration();
   const aiService = AIService.getInstance();
+
+  // Format percentage to always show as integer
+  const formatPercentage = (value: number) => {
+    return Math.round(value);
+  };
 
   const handleExplainCode = async () => {
     if (explanation) {
@@ -81,48 +93,54 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
     }
   };
 
-  // Format percentage to always show as integer
-  const formatPercentage = (value: number) => {
-    return Math.round(value);
+  const toggleCollaborationPanel = () => {
+    setShowCollaborationPanel(!showCollaborationPanel);
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <div className="flex">
-          <button
-            onClick={() => setActiveTab('code')}
-            className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
-              activeTab === 'code'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
-          >
-            <Code className="w-4 h-4 mr-2" />
-            Code
-          </button>
-          <button
-            onClick={handleExplainCode}
-            className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
-              activeTab === 'explain'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
-          >
-            <Brain className="w-4 h-4 mr-2" />
-            Explain
-          </button>
-          <button
-            onClick={handleGenerateTests}
-            className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
-              activeTab === 'test'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Test
-          </button>
+        <div className="flex items-center justify-between px-4">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab('code')}
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
+                activeTab === 'code'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Code className="w-4 h-4 mr-2" />
+              Code
+            </button>
+            <button
+              onClick={handleExplainCode}
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
+                activeTab === 'explain'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              Explain
+            </button>
+            <button
+              onClick={handleGenerateTests}
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
+                activeTab === 'test'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Test
+            </button>
+          </div>
+          
+          {/* Collaboration button */}
+          <div className="pr-2">
+            <CollaborationButton onClick={toggleCollaborationPanel} />
+          </div>
         </div>
       </div>
 
@@ -158,13 +176,24 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
                   </div>
                 </div>
                 <div className="h-[500px] overflow-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <CodeEditor
-                    value={code}
-                    language={language}
-                    height="100%"
-                    readOnly
-                    title="Source Code Editor"
-                  />
+                  {isCollaborating ? (
+                    <CollaborativeCodeEditor
+                      value={code}
+                      language={language}
+                      height="100%"
+                      readOnly={false}
+                      fileId={filePath}
+                      title="Source Code Editor"
+                    />
+                  ) : (
+                    <CodeEditor
+                      value={code}
+                      language={language}
+                      height="100%"
+                      readOnly
+                      title="Source Code Editor"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -293,6 +322,16 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Collaboration Panel */}
+      <AnimatePresence>
+        {showCollaborationPanel && (
+          <CollaborationPanel 
+            fileId={filePath}
+            onClose={toggleCollaborationPanel}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

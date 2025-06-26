@@ -111,6 +111,32 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({
       bestFor: ['Quick scans', 'Style checks', 'Simple analysis'],
       speed: 'fast',
       accuracy: 85
+    },
+    {
+      id: 'gemini-pro',
+      name: 'Gemini Pro',
+      provider: 'Google',
+      description: 'Google\'s advanced multimodal AI model with strong code understanding',
+      tpm: 60000,
+      contextWindow: 32000,
+      costPer1kTokens: 0.0025,
+      strengths: ['Multimodal capabilities', 'Strong code understanding', 'Fast processing'],
+      bestFor: ['General code analysis', 'Medium-sized projects', 'Mixed content analysis'],
+      speed: 'fast',
+      accuracy: 92
+    },
+    {
+      id: 'llama-3-70b',
+      name: 'Llama 3 (70B)',
+      provider: 'Meta',
+      description: 'Meta\'s largest open-source model with strong reasoning capabilities',
+      tpm: 15000,
+      contextWindow: 8192,
+      costPer1kTokens: 0.0015,
+      strengths: ['Open source', 'Strong reasoning', 'Customizable'],
+      bestFor: ['On-premises deployment', 'Privacy-sensitive code', 'Custom fine-tuning'],
+      speed: 'medium',
+      accuracy: 90
     }
   ];
 

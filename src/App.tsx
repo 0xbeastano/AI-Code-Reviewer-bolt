@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { CodebaseProvider } from './contexts/CodebaseContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
+import { CollaborationProvider } from './contexts/CollaborationContext';
 import { AuthProvider } from './components/Auth/AuthProvider';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import Layout from './components/Layout/Layout';
@@ -41,85 +42,87 @@ function App() {
           <AuthProvider>
             <CodebaseProvider>
               <WebSocketProvider>
-                <Router>
-                  <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                    <Routes>
-                      {/* Public Routes */}
-                      <Route path="/" element={<LandingPage />} />
-                      <Route path="/pricing" element={<PricingPage />} />
-                      <Route path="/docs" element={<DocumentationPage />} />
-                      <Route 
-                        path="/auth" 
-                        element={
-                          <ProtectedRoute requireAuth={false}>
-                            <AuthPage />
+                <CollaborationProvider>
+                  <Router>
+                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                      <Routes>
+                        {/* Public Routes */}
+                        <Route path="/" element={<LandingPage />} />
+                        <Route path="/pricing" element={<PricingPage />} />
+                        <Route path="/docs" element={<DocumentationPage />} />
+                        <Route 
+                          path="/auth" 
+                          element={
+                            <ProtectedRoute requireAuth={false}>
+                              <AuthPage />
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
+                        
+                        {/* Test Dashboard - Public for testing */}
+                        <Route path="/test" element={<TestDashboard />} />
+                        
+                        {/* Protected Routes */}
+                        <Route path="/dashboard" element={
+                          <ProtectedRoute>
+                            <Layout>
+                              <Dashboard />
+                            </Layout>
                           </ProtectedRoute>
-                        } 
+                        } />
+                        <Route path="/review" element={
+                          <ProtectedRoute>
+                            <Layout>
+                              <CodeReview />
+                            </Layout>
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/review/:id/results" element={
+                          <ProtectedRoute>
+                            <Layout>
+                              <ReviewResults />
+                            </Layout>
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/analytics" element={
+                          <ProtectedRoute>
+                            <Layout>
+                              <Analytics />
+                            </Layout>
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/settings" element={
+                          <ProtectedRoute>
+                            <Layout>
+                              <Settings />
+                            </Layout>
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/deploy" element={
+                          <ProtectedRoute>
+                            <Layout>
+                              <DeployPage />
+                            </Layout>
+                          </ProtectedRoute>
+                        } />
+                        
+                        {/* Fallback - Redirect to landing page */}
+                        <Route path="*" element={<LandingPage />} />
+                      </Routes>
+                      <Toaster 
+                        position="top-right"
+                        toastOptions={{
+                          duration: 4000,
+                          style: {
+                            background: 'var(--toast-bg)',
+                            color: 'var(--toast-color)',
+                          },
+                        }}
                       />
-                      <Route path="/auth/callback" element={<AuthCallback />} />
-                      
-                      {/* Test Dashboard - Public for testing */}
-                      <Route path="/test" element={<TestDashboard />} />
-                      
-                      {/* Protected Routes */}
-                      <Route path="/dashboard" element={
-                        <ProtectedRoute>
-                          <Layout>
-                            <Dashboard />
-                          </Layout>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/review" element={
-                        <ProtectedRoute>
-                          <Layout>
-                            <CodeReview />
-                          </Layout>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/review/:id/results" element={
-                        <ProtectedRoute>
-                          <Layout>
-                            <ReviewResults />
-                          </Layout>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/analytics" element={
-                        <ProtectedRoute>
-                          <Layout>
-                            <Analytics />
-                          </Layout>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/settings" element={
-                        <ProtectedRoute>
-                          <Layout>
-                            <Settings />
-                          </Layout>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/deploy" element={
-                        <ProtectedRoute>
-                          <Layout>
-                            <DeployPage />
-                          </Layout>
-                        </ProtectedRoute>
-                      } />
-                      
-                      {/* Fallback - Redirect to landing page */}
-                      <Route path="*" element={<LandingPage />} />
-                    </Routes>
-                    <Toaster 
-                      position="top-right"
-                      toastOptions={{
-                        duration: 4000,
-                        style: {
-                          background: 'var(--toast-bg)',
-                          color: 'var(--toast-color)',
-                        },
-                      }}
-                    />
-                  </div>
-                </Router>
+                    </div>
+                  </Router>
+                </CollaborationProvider>
               </WebSocketProvider>
             </CodebaseProvider>
           </AuthProvider>
