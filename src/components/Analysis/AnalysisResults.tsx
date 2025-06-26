@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, 
@@ -28,6 +28,8 @@ import { useCodebase } from '../../contexts/CodebaseContext';
 import toast from 'react-hot-toast';
 import CodeExplainer from '../CodeExplainer/CodeExplainer';
 import TestGenerator from '../TestGenerator/TestGenerator';
+import { formatPercentage, getMetricColor } from '../../utils/formatters';
+import { VirtualizedFileList } from '../CodeReview/VirtualizedFileList';
 
 interface AnalysisResultsProps {
   results: AnalysisResult[];
@@ -48,63 +50,53 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   const [showExplainer, setShowExplainer] = useState(false);
   const [showTestGenerator, setShowTestGenerator] = useState(false);
 
-  const totalIssues = results.reduce((acc, result) => acc + result.issues.length, 0);
-  const criticalIssues = results.reduce((acc, result) => 
-    acc + result.issues.filter(issue => issue.severity === 'critical').length, 0
+  // Memoize these calculations to prevent recalculation on every render
+  const totalIssues = useMemo(() => 
+    results.reduce((acc, result) => acc + result.issues.length, 0), 
+    [results]
   );
-  const highIssues = results.reduce((acc, result) => 
-    acc + result.issues.filter(issue => issue.severity === 'high').length, 0
+  
+  const criticalIssues = useMemo(() => 
+    results.reduce((acc, result) => 
+      acc + result.issues.filter(issue => issue.severity === 'critical').length, 0), 
+    [results]
+  );
+  
+  const highIssues = useMemo(() => 
+    results.reduce((acc, result) => 
+      acc + result.issues.filter(issue => issue.severity === 'high').length, 0), 
+    [results]
   );
 
-  const averageMetrics = results.reduce((acc, result) => {
-    Object.keys(result.metrics).forEach(key => {
-      if (typeof result.metrics[key as keyof QualityMetrics] === 'number') {
-        acc[key as keyof QualityMetrics] = (acc[key as keyof QualityMetrics] || 0) + 
-          (result.metrics[key as keyof QualityMetrics] as number);
+  const averageMetrics = useMemo(() => {
+    const metrics = results.reduce((acc, result) => {
+      Object.keys(result.metrics).forEach(key => {
+        if (typeof result.metrics[key as keyof QualityMetrics] === 'number') {
+          acc[key as keyof QualityMetrics] = (acc[key as keyof QualityMetrics] || 0) + 
+            (result.metrics[key as keyof QualityMetrics] as number);
+        }
+      });
+      return acc;
+    }, {} as Partial<QualityMetrics>);
+
+    Object.keys(metrics).forEach(key => {
+      if (typeof metrics[key as keyof QualityMetrics] === 'number') {
+        (metrics[key as keyof QualityMetrics] as number) = 
+          Math.round((metrics[key as keyof QualityMetrics] as number) / results.length);
       }
     });
-    return acc;
-  }, {} as Partial<QualityMetrics>);
+    
+    return metrics;
+  }, [results]);
 
-  Object.keys(averageMetrics).forEach(key => {
-    if (typeof averageMetrics[key as keyof QualityMetrics] === 'number') {
-      (averageMetrics[key as keyof QualityMetrics] as number) = 
-        Math.round((averageMetrics[key as keyof QualityMetrics] as number) / results.length);
-    }
-  });
-
-  useEffect(() => {
+  // Set the first file as selected when results change
+  React.useEffect(() => {
     if (results.length > 0 && !selectedFile) {
       setSelectedFile(results[0]);
     }
   }, [results, selectedFile]);
 
-  // Format percentage to always show as integer
-  const formatPercentage = (value: number) => {
-    return Math.round(value);
-  };
-
-  const getMetricColor = (value: number, reverse = false) => {
-    if (reverse) {
-      if (value >= 80) return 'text-error-600 dark:text-error-400';
-      if (value >= 60) return 'text-warning-600 dark:text-warning-400';
-      return 'text-success-600 dark:text-success-400';
-    }
-    if (value >= 80) return 'text-success-600 dark:text-success-400';
-    if (value >= 60) return 'text-warning-600 dark:text-warning-400';
-    return 'text-error-600 dark:text-error-400';
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'text-error-600 dark:text-error-400 bg-error-50 dark:bg-error-900/20';
-      case 'high': return 'text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/20';
-      case 'medium': return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20';
-      default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800';
-    }
-  };
-
-  const handleCopy = async (text: string) => {
+  const handleCopy = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -114,17 +106,13 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       console.error('Failed to copy:', error);
       toast.error('Failed to copy to clipboard');
     }
-  };
+  }, []);
 
-  const toggleSuggestion = (suggestionId: string) => {
-    if (selectedSuggestion === suggestionId) {
-      setSelectedSuggestion(null);
-    } else {
-      setSelectedSuggestion(suggestionId);
-    }
-  };
+  const toggleSuggestion = useCallback((suggestionId: string) => {
+    setSelectedSuggestion(prev => prev === suggestionId ? null : suggestionId);
+  }, []);
 
-  const handleApplySuggestion = (suggestion: any) => {
+  const handleApplySuggestion = useCallback((suggestion: any) => {
     if (!selectedFile) return;
     
     try {
@@ -135,7 +123,11 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       console.error('Failed to apply suggestion:', error);
       toast.error('Failed to apply suggestion');
     }
-  };
+  }, [selectedFile, updateFileContent]);
+
+  const handleFileSelect = useCallback((file: AnalysisResult) => {
+    setSelectedFile(file);
+  }, []);
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -317,42 +309,12 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               Analyzed Files
             </h3>
           </div>
-          <div className="max-h-96 overflow-y-auto">
-            {results.map((result, index) => (
-              <motion.button
-                key={result.fileId}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 * index + 0.5 }}
-                onClick={() => setSelectedFile(result)}
-                className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
-                  selectedFile?.fileId === result.fileId ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                }`}
-                whileHover={{ x: 4 }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {result.filePath.split('/').pop()}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {result.issues.length > 0 && (
-                      <motion.span 
-                        className="px-2 py-1 text-xs font-medium rounded bg-warning-100 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400"
-                        whileHover={{ scale: 1.1 }}
-                      >
-                        {result.issues.length}
-                      </motion.span>
-                    )}
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                  {result.filePath}
-                </p>
-              </motion.button>
-            ))}
+          <div className="h-96">
+            <VirtualizedFileList 
+              files={results}
+              selectedFileId={selectedFile?.fileId}
+              onSelectFile={handleFileSelect}
+            />
           </div>
         </motion.div>
 
@@ -946,4 +908,14 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   );
 };
 
-export default AnalysisResults;
+export default React.memo(AnalysisResults);
+
+// Helper function for severity colors
+function getSeverityColor(severity: string): string {
+  switch (severity) {
+    case 'critical': return 'text-error-600 dark:text-error-400 bg-error-50 dark:bg-error-900/20';
+    case 'high': return 'text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/20';
+    case 'medium': return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20';
+    default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800';
+  }
+}

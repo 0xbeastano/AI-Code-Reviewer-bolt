@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Check } from 'lucide-react';
 import { useCollaboration } from '../../contexts/CollaborationContext';
 import { useAuth } from '../Auth/AuthProvider';
+import { sanitizeHtml } from '../../utils/sanitize';
 
 interface CommentWidgetProps {
   fileId: string;
@@ -26,9 +27,11 @@ const CommentWidget: React.FC<CommentWidgetProps> = ({
   const hasUnresolvedComments = comments.some(comment => !comment.resolved);
 
   const handleAddComment = () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !user) return;
     
-    addComment(fileId, line, newComment);
+    // Sanitize the comment content before adding it
+    const sanitizedComment = sanitizeHtml(newComment);
+    addComment(fileId, line, sanitizedComment);
     setNewComment('');
   };
 
@@ -111,9 +114,9 @@ const CommentWidget: React.FC<CommentWidgetProps> = ({
                         </div>
                       </div>
                       
-                      <p className="text-xs text-gray-700 dark:text-gray-300 ml-7 mb-1">
-                        {comment.content}
-                      </p>
+                      <p className="text-xs text-gray-700 dark:text-gray-300 ml-7 mb-1"
+                         dangerouslySetInnerHTML={{ __html: sanitizeHtml(comment.content) }}
+                      />
                       
                       {!comment.resolved && (
                         <div className="flex justify-end">

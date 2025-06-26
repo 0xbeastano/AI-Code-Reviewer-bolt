@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, Code, Sparkles, Copy, Check, FileCode, AlertCircle, Zap, Eye } from 'lucide-react';
 import { AIService } from '../../services/aiService';
 import CodeEditor from '../CodeEditor/CodeEditor';
 import toast from 'react-hot-toast';
+import { sanitizeHtml } from '../../utils/sanitize';
 
 interface CodeExplainerProps {
   code: string;
@@ -29,7 +30,7 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
 
   const aiService = AIService.getInstance();
 
-  const handleExplain = async () => {
+  const handleExplain = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await aiService.explainCode(code, language);
@@ -40,9 +41,9 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [code, language, aiService]);
 
-  const handleCopy = async (text: string) => {
+  const handleCopy = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -51,7 +52,7 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
     } catch (error) {
       toast.error('Failed to copy to clipboard');
     }
-  };
+  }, []);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -138,9 +139,10 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
                     <Brain className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
                     Explanation
                   </h4>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    {explanation.explanation}
-                  </p>
+                  <p 
+                    className="text-gray-700 dark:text-gray-300"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(explanation.explanation) }}
+                  />
                   <motion.button
                     onClick={() => handleCopy(explanation.explanation)}
                     className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -158,9 +160,10 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
                     <Code className="w-4 h-4 text-primary-600 dark:text-primary-400 mr-2" />
                     Complexity
                   </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {explanation.complexity}
-                  </p>
+                  <p 
+                    className="text-sm text-gray-600 dark:text-gray-300"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(explanation.complexity) }}
+                  />
                 </div>
 
                 <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
@@ -176,9 +179,8 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         className="list-disc list-inside"
-                      >
-                        {component}
-                      </motion.li>
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(component) }}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -196,9 +198,8 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 + 0.3 }}
                         className="list-disc list-inside"
-                      >
-                        {issue}
-                      </motion.li>
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(issue) }}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -223,4 +224,4 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
   );
 };
 
-export default CodeExplainer;
+export default React.memo(CodeExplainer);

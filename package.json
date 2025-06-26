@@ -55,7 +55,9 @@
     "y-websocket": "^1.5.3",
     "y-monaco": "^0.1.5",
     "y-indexeddb": "^9.0.12",
-    "yjs": "^13.6.11"
+    "yjs": "^13.6.11",
+    "react-window": "^1.8.10",
+    "react-virtualized-auto-sizer": "^1.0.20"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",
@@ -68,6 +70,7 @@
     "@types/babel__traverse": "^7.20.5",
     "@types/esprima": "^4.0.6",
     "@types/dompurify": "^3.0.5",
+    "@types/react-window": "^1.8.8",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
     "postcss": "^8.4.35",
@@ -81,6 +84,7 @@
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/user-event": "^14.5.1",
     "jest-environment-jsdom": "^29.7.0",
-    "msw": "^2.0.11"
+    "msw": "^2.0.11",
+    "jest-axe": "^8.0.0"
   }
 }

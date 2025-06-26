@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -10,21 +10,31 @@ import {
   Zap,
   Users,
   Database,
-  Globe
+  Brain
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import ProfileSettings from '../components/Settings/ProfileSettings';
-import SecuritySettings from '../components/Settings/SecuritySettings';
-import NotificationSettings from '../components/Settings/NotificationSettings';
-import ThemeSettings from '../components/Settings/ThemeSettings';
-import APISettings from '../components/Settings/APISettings';
-import IntegrationSettings from '../components/Settings/IntegrationSettings';
-import TeamSettings from '../components/Settings/TeamSettings';
-import BillingSettings from '../components/Settings/BillingSettings';
+
+// Lazy load settings components
+const ProfileSettings = lazy(() => import('../components/Settings/ProfileSettings'));
+const SecuritySettings = lazy(() => import('../components/Settings/SecuritySettings'));
+const NotificationSettings = lazy(() => import('../components/Settings/NotificationSettings'));
+const ThemeSettings = lazy(() => import('../components/Settings/ThemeSettings'));
+const APISettings = lazy(() => import('../components/Settings/APISettings'));
+const IntegrationSettings = lazy(() => import('../components/Settings/IntegrationSettings'));
+const TeamSettings = lazy(() => import('../components/Settings/TeamSettings'));
+const BillingSettings = lazy(() => import('../components/Settings/BillingSettings'));
+const AIUsageMonitor = lazy(() => import('../components/Settings/AIUsageMonitor'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-96">
+    <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'theme' | 'api' | 'integrations' | 'team' | 'billing'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'theme' | 'api' | 'integrations' | 'team' | 'billing' | 'ai-usage'>('profile');
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User, description: 'Manage your personal information' },
@@ -33,6 +43,7 @@ const Settings: React.FC = () => {
     { id: 'theme', label: 'Appearance', icon: Palette, description: 'Customize the interface theme' },
     { id: 'api', label: 'API Keys', icon: Key, description: 'Manage API keys and tokens' },
     { id: 'integrations', label: 'Integrations', icon: GitBranch, description: 'Connect external services' },
+    { id: 'ai-usage', label: 'AI Usage', icon: Brain, description: 'Monitor AI token usage and costs' },
     { id: 'team', label: 'Team', icon: Users, description: 'Manage team members and permissions', adminOnly: true },
     { id: 'billing', label: 'Billing', icon: Database, description: 'Subscription and usage information', adminOnly: true }
   ] as const;
@@ -92,14 +103,17 @@ const Settings: React.FC = () => {
             transition={{ duration: 0.3 }}
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
           >
-            {activeTab === 'profile' && <ProfileSettings />}
-            {activeTab === 'security' && <SecuritySettings />}
-            {activeTab === 'notifications' && <NotificationSettings />}
-            {activeTab === 'theme' && <ThemeSettings />}
-            {activeTab === 'api' && <APISettings />}
-            {activeTab === 'integrations' && <IntegrationSettings />}
-            {activeTab === 'team' && <TeamSettings />}
-            {activeTab === 'billing' && <BillingSettings />}
+            <Suspense fallback={<LoadingFallback />}>
+              {activeTab === 'profile' && <ProfileSettings />}
+              {activeTab === 'security' && <SecuritySettings />}
+              {activeTab === 'notifications' && <NotificationSettings />}
+              {activeTab === 'theme' && <ThemeSettings />}
+              {activeTab === 'api' && <APISettings />}
+              {activeTab === 'integrations' && <IntegrationSettings />}
+              {activeTab === 'team' && <TeamSettings />}
+              {activeTab === 'billing' && <BillingSettings />}
+              {activeTab === 'ai-usage' && <AIUsageMonitor userId={user?.id} />}
+            </Suspense>
           </motion.div>
         </div>
       </div>
