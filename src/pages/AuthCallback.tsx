@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase, isDemoMode } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
-export const AuthCallback: React.FC = () => {
+const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 

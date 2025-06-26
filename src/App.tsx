@@ -15,13 +15,14 @@ import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import TestDashboard from './pages/TestDashboard';
 import { AuthPage } from './components/Auth/AuthPage';
-import { AuthCallback } from './pages/AuthCallback';
+import AuthCallback from './pages/AuthCallback';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
 import PricingPage from './pages/PricingPage';
 import DocumentationPage from './pages/DocumentationPage';
 import ReviewResults from './pages/ReviewResults';
 import DeployPage from './pages/DeployPage';
+import { ResetPasswordConfirm } from './components/Auth/ResetPasswordConfirm';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -59,6 +60,14 @@ function App() {
                           } 
                         />
                         <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route 
+                          path="/auth/reset-password" 
+                          element={
+                            <ProtectedRoute requireAuth={false}>
+                              <ResetPasswordConfirm />
+                            </ProtectedRoute>
+                          } 
+                        />
                         
                         {/* Test Dashboard - Public for testing */}
                         <Route path="/test" element={<TestDashboard />} />

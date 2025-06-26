@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Demo mode flag
+// Demo mode flag - set to false to disable demo mode
 let demoMode = false;
 
 // Check if Supabase is properly configured
@@ -18,7 +18,7 @@ let supabaseClient = null;
 
 try {
   if (isSupabaseConfigured) {
-    console.log('🔍 Attempting to initialize Supabase with:', { 
+    console.log('🔍 Initializing Supabase with:', { 
       url: supabaseUrl?.substring(0, 15) + '...',
       keyLength: supabaseAnonKey?.length || 0
     });
@@ -48,6 +48,10 @@ export const isDemoMode = () => demoMode;
 export const enableDemoMode = () => {
   demoMode = true;
   console.log('🔄 Demo mode enabled');
+};
+export const disableDemoMode = () => {
+  demoMode = false;
+  console.log('🔄 Demo mode disabled');
 };
 
 // Database types

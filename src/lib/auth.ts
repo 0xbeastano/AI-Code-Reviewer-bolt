@@ -1,6 +1,6 @@
 import { createClient, User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { Octokit } from '@octokit/rest';
-import { supabase, isDemoMode } from './supabase';
+import { supabase, isDemoMode, disableDemoMode } from './supabase';
 
 // GitHub OAuth configuration
 export const githubOAuthConfig = {
@@ -22,9 +22,9 @@ export interface User {
   name: string;
   avatar?: string;
   provider: 'email' | 'github' | 'google';
-  githubToken?: string;
-  githubUsername?: string;
-  googleId?: string;
+  provider_token?: string;
+  user_metadata?: any;
+  app_metadata?: any;
   emailVerified: boolean;
   createdAt: Date;
   lastLoginAt: Date;
@@ -59,6 +59,8 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         this.session = await this.createAuthSession(session);
+        // If we have a valid session, disable demo mode
+        disableDemoMode();
       }
     } else if (isDemoMode()) {
       // Create a demo session if in demo mode
@@ -78,8 +80,14 @@ export class AuthService {
         createdAt: new Date(),
         lastLoginAt: new Date(),
         role: 'developer',
-        githubToken: 'demo-github-token',
-        githubUsername: 'demo-user'
+        user_metadata: {
+          full_name: 'Demo User',
+          avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=random',
+          user_name: 'demo-user'
+        },
+        app_metadata: {
+          provider: 'github'
+        }
       },
       accessToken: 'demo-access-token',
       refreshToken: 'demo-refresh-token',
@@ -97,9 +105,9 @@ export class AuthService {
         name: user.user_metadata?.full_name || user.user_metadata?.name || user.email || '',
         avatar: user.user_metadata?.avatar_url,
         provider: user.app_metadata?.provider || 'email',
-        githubToken: user.app_metadata?.provider === 'github' ? supabaseSession.provider_token : undefined,
-        githubUsername: user.user_metadata?.user_name || user.user_metadata?.preferred_username,
-        googleId: user.user_metadata?.sub,
+        provider_token: supabaseSession.provider_token,
+        user_metadata: user.user_metadata,
+        app_metadata: user.app_metadata,
         emailVerified: user.email_confirmed_at !== null,
         createdAt: new Date(user.created_at),
         lastLoginAt: new Date(user.last_sign_in_at || user.created_at),
@@ -197,7 +205,6 @@ export class AuthService {
       };
     }
 
-    // Check if we have a GitHub token from the session
     if (!supabase) {
       return { repositories: [], error: 'Supabase client not available' };
     }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase, isDemoMode } from '../../lib/supabase';
+import { supabase, isDemoMode, disableDemoMode } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface AuthContextType {
@@ -29,24 +29,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Demo user for when Supabase is not available
-const demoUser = {
-  id: 'demo-user-id',
-  email: 'demo@example.com',
-  user_metadata: {
-    full_name: 'Demo User',
-    avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=random',
-    role: 'developer',
-    user_name: 'demo-user' // GitHub username
-  },
-  app_metadata: {
-    provider: 'github'
-  },
-  created_at: new Date().toISOString(),
-  last_sign_in_at: new Date().toISOString(),
-  email_confirmed_at: new Date().toISOString()
-} as unknown as User;
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -55,10 +37,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (isDemoMode()) {
       // Set up demo user
-      setUser(demoUser);
       setLoading(false);
-      console.log('🔄 Using demo user in demo mode');
-      return;
+      console.log('🔄 Demo mode is enabled, but we will try to authenticate with Supabase first');
     }
 
     if (!supabase) {
@@ -73,9 +53,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const { data, error } = await supabase.auth.getSession();
         if (error) {
           console.warn('Failed to get initial session:', error);
+        } else if (data.session) {
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
+          disableDemoMode(); // Disable demo mode if we have a real session
         }
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
       } catch (error) {
         console.error('Error getting initial session:', error);
       } finally {
@@ -89,18 +71,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session) {
+        disableDemoMode(); // Disable demo mode when user signs in
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    if (isDemoMode()) {
-      // Simulate successful sign-in in demo mode
-      setUser(demoUser);
-      return { error: undefined };
-    }
-
     if (!supabase) {
       toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
@@ -124,12 +103,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signUp = async (email: string, password: string) => {
-    if (isDemoMode()) {
-      // Simulate successful sign-up in demo mode
-      setUser(demoUser);
-      return { error: undefined };
-    }
-
     if (!supabase) {
       toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
@@ -153,12 +126,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async () => {
-    if (isDemoMode()) {
-      setUser(null);
-      setSession(null);
-      return;
-    }
-
     if (!supabase) {
       setUser(null);
       setSession(null);
@@ -176,11 +143,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const resetPassword = async (email: string) => {
-    if (isDemoMode()) {
-      // Simulate successful password reset in demo mode
-      return { error: undefined };
-    }
-
     if (!supabase) {
       toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
@@ -203,12 +165,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signInWithGitHub = async () => {
-    if (isDemoMode()) {
-      // Simulate successful GitHub sign-in in demo mode
-      setUser(demoUser);
-      return { error: undefined };
-    }
-
     if (!supabase) {
       toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
@@ -239,12 +195,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signInWithGoogle = async () => {
-    if (isDemoMode()) {
-      // Simulate successful Google sign-in in demo mode
-      setUser(demoUser);
-      return { error: undefined };
-    }
-
     if (!supabase) {
       toast.error('Authentication service not available');
       return { error: new AuthError('Supabase client not initialized') };
