@@ -131,6 +131,11 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     }
   };
 
+  // Format percentage to always show as integer
+  const formatPercentage = (value: number) => {
+    return Math.round(value);
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto">
       <div className="mb-8 text-center">
@@ -244,14 +249,12 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -mr-12 -mt-12"></div>
           <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <motion.div
-                animate={{ rotate: [0, 10, 0, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <TrendingUp className={`w-6 h-6 ${getMetricColor(averageMetrics.maintainability || 0)}`} />
-              </motion.div>
-            </div>
+            <motion.div
+              animate={{ rotate: [0, 10, 0, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <TrendingUp className={`w-6 h-6 ${getMetricColor(averageMetrics.maintainability || 0)}`} />
+            </motion.div>
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Maintainability</p>
               <motion.p 
@@ -260,7 +263,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10, delay: 0.4 }}
               >
-                {averageMetrics.maintainability || 0}%
+                {formatPercentage(averageMetrics.maintainability || 0)}%
               </motion.p>
             </div>
           </div>
@@ -278,14 +281,12 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full -mr-12 -mt-12"></div>
           <div className="flex items-center space-x-3">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <motion.div
-                animate={{ rotate: [0, 10, 0, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-              >
-                <Shield className={`w-6 h-6 ${getMetricColor(averageMetrics.security || 0)}`} />
-              </motion.div>
-            </div>
+            <motion.div
+              animate={{ rotate: [0, 10, 0, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+            >
+              <Shield className={`w-6 h-6 ${getMetricColor(averageMetrics.security || 0)}`} />
+            </motion.div>
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Security Score</p>
               <motion.p 
@@ -294,7 +295,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10, delay: 0.5 }}
               >
-                {averageMetrics.security || 0}%
+                {formatPercentage(averageMetrics.security || 0)}%
               </motion.p>
             </div>
           </div>
@@ -493,7 +494,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                                 whileHover={{ scale: 1.1 }}
                               >
                                 {typeof value === 'number' && key !== 'duplicateLines' && key !== 'linesOfCode' 
-                                  ? `${value}%` 
+                                  ? `${formatPercentage(value)}%` 
                                   : value
                                 }
                               </motion.span>
@@ -584,7 +585,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 
                   {activeTab === 'issues' && (
                     <motion.div 
-                      className="space-y-4"
+                      className="space-y-4 max-h-[600px] overflow-y-auto pr-2"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
@@ -651,7 +652,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 
                   {activeTab === 'suggestions' && (
                     <motion.div 
-                      className="space-y-4"
+                      className="space-y-4 max-h-[600px] overflow-y-auto pr-2"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
@@ -824,7 +825,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                               animate={{ scale: 1 }}
                               transition={{ type: "spring", stiffness: 400, damping: 10, delay: index * 0.1 + 0.2 }}
                             >
-                              {metric.value}%
+                              {formatPercentage(metric.value)}%
                             </motion.p>
                           </motion.div>
                         ))}
@@ -878,7 +879,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                                     whileHover={{ scale: 1.1 }}
                                   >
                                     {typeof value === 'number' && key !== 'duplicateLines' && key !== 'linesOfCode' 
-                                      ? `${value}%` 
+                                      ? `${formatPercentage(value)}%` 
                                       : value
                                     }
                                   </motion.span>
