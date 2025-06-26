@@ -10,6 +10,7 @@ interface CodeEditorProps {
   readOnly?: boolean;
   showDiff?: boolean;
   originalValue?: string;
+  title?: string;
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -20,6 +21,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   readOnly = false,
   showDiff = false,
   originalValue,
+  title
 }) => {
   const { isDark } = useTheme();
 
@@ -34,32 +36,37 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     theme: isDark ? 'vs-dark' : 'vs-light',
   };
 
-  if (showDiff && originalValue) {
-    return (
-      <Editor
-        height={height}
-        language={language}
-        original={originalValue}
-        modified={value}
-        theme={isDark ? 'vs-dark' : 'vs-light'}
-        options={{
-          ...editorOptions,
-          enableSplitViewResizing: false,
-          renderSideBySide: true,
-        }}
-      />
-    );
-  }
-
   return (
-    <Editor
-      height={height}
-      language={language}
-      value={value}
-      onChange={onChange}
-      theme={isDark ? 'vs-dark' : 'vs-light'}
-      options={editorOptions}
-    />
+    <div className="flex flex-col h-full">
+      {title && (
+        <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 rounded-t-lg">
+          {title}
+        </div>
+      )}
+      {showDiff && originalValue ? (
+        <Editor
+          height={height}
+          language={language}
+          original={originalValue}
+          modified={value}
+          theme={isDark ? 'vs-dark' : 'vs-light'}
+          options={{
+            ...editorOptions,
+            enableSplitViewResizing: false,
+            renderSideBySide: true,
+          }}
+        />
+      ) : (
+        <Editor
+          height={height}
+          language={language}
+          value={value}
+          onChange={onChange}
+          theme={isDark ? 'vs-dark' : 'vs-light'}
+          options={editorOptions}
+        />
+      )}
+    </div>
   );
 };
 

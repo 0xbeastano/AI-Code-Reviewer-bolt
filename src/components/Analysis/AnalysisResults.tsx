@@ -724,6 +724,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                                         language={selectedFile.filePath.split('.').pop() || 'javascript'}
                                         height="80px"
                                         readOnly
+                                        title="Original Code"
                                       />
                                       <motion.button
                                         onClick={() => handleCopy(suggestion.before)}
@@ -743,6 +744,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                                         language={selectedFile.filePath.split('.').pop() || 'javascript'}
                                         height="80px"
                                         readOnly
+                                        title="Improved Code"
                                       />
                                       <motion.button
                                         onClick={() => handleCopy(suggestion.after)}
@@ -771,7 +773,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                                       whileHover={{ scale: 1.05 }}
                                       whileTap={{ scale: 0.95 }}
                                     >
-                                      <Play className="w-4 h-4 mr-2" />
+                                      <PlayIcon className="w-4 h-4 mr-2" />
                                       Apply This Fix
                                     </motion.button>
                                   </div>

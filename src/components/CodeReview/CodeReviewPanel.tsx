@@ -81,6 +81,11 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
     }
   };
 
+  // Format percentage to always show as integer
+  const formatPercentage = (value: number) => {
+    return Math.round(value);
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="border-b border-gray-200 dark:border-gray-700">
@@ -158,6 +163,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
                     language={language}
                     height="100%"
                     readOnly
+                    title="Source Code Editor"
                   />
                 </div>
               </div>
@@ -177,7 +183,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
                         />
                       </div>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {metrics.security}%
+                        {formatPercentage(metrics.security)}%
                       </span>
                     </div>
                   </div>
@@ -197,7 +203,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
                         />
                       </div>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {metrics.performance}%
+                        {formatPercentage(metrics.performance)}%
                       </span>
                     </div>
                   </div>
@@ -217,7 +223,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
                         />
                       </div>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {metrics.maintainability}%
+                        {formatPercentage(metrics.maintainability)}%
                       </span>
                     </div>
                   </div>

@@ -93,6 +93,7 @@ const CodeExplainer: React.FC<CodeExplainerProps> = ({
               language={language}
               height="100%"
               readOnly
+              title="Source Code"
             />
           </div>
         </div>

@@ -120,6 +120,7 @@ const TestGenerator: React.FC<TestGeneratorProps> = ({
               language={language}
               height="100%"
               readOnly
+              title="Source Code"
             />
           </div>
         </div>
@@ -211,6 +212,7 @@ const TestGenerator: React.FC<TestGeneratorProps> = ({
                     language={language}
                     height="300px"
                     readOnly
+                    title="Test Code"
                   />
                 </div>
               </div>
@@ -220,7 +222,7 @@ const TestGenerator: React.FC<TestGeneratorProps> = ({
                   <Play className="w-4 h-4 text-primary-600 dark:text-primary-400 mr-2" />
                   Test Cases
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                   {testData.testCases.map((testCase, index) => (
                     <motion.div
                       key={index}
