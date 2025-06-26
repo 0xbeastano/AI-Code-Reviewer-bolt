@@ -96,14 +96,15 @@ export const GitHubIntegration: React.FC = () => {
 
   const handleConnectGitHub = async () => {
     try {
+      // Store current location for redirect after auth
+      sessionStorage.setItem('auth_return_to', window.location.pathname);
+      
       const { error } = await authService.signInWithGitHub();
       
       if (error) {
-        toast.error(error);
-      } else {
-        // Store current location for redirect after auth
-        sessionStorage.setItem('auth_return_to', window.location.pathname);
+        toast.error(error.message);
       }
+      // Redirect is handled in the signInWithGitHub function
     } catch (error) {
       toast.error('Failed to connect GitHub');
     }
@@ -154,7 +155,7 @@ export const GitHubIntegration: React.FC = () => {
         files: Array.isArray(content) ? content.map((file: any) => ({
           path: file.path,
           content: file.content || 'Sample content',
-          language: file.name.split('.').pop() || 'text',
+          language: file.name?.split('.').pop() || 'text',
           size: file.size || 0,
           lastModified: new Date(file.updated_at || Date.now())
         })) : [{
@@ -361,7 +362,7 @@ export const GitHubIntegration: React.FC = () => {
                     />
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
+                      <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate">
                           {repo.name}
                         </h4>
@@ -388,7 +389,7 @@ export const GitHubIntegration: React.FC = () => {
                         </p>
                       )}
                       
-                      <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center space-x-1">
                           <Star className="w-3 h-3" />
                           <span>{repo.stargazers_count}</span>

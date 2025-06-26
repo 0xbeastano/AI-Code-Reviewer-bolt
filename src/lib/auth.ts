@@ -77,7 +77,9 @@ export class AuthService {
         emailVerified: true,
         createdAt: new Date(),
         lastLoginAt: new Date(),
-        role: 'developer'
+        role: 'developer',
+        githubToken: 'demo-github-token',
+        githubUsername: 'demo-user'
       },
       accessToken: 'demo-access-token',
       refreshToken: 'demo-refresh-token',
@@ -92,11 +94,11 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email || '',
-        name: user.user_metadata?.full_name || user.email || '',
+        name: user.user_metadata?.full_name || user.user_metadata?.name || user.email || '',
         avatar: user.user_metadata?.avatar_url,
         provider: user.app_metadata?.provider || 'email',
-        githubToken: user.user_metadata?.provider_token,
-        githubUsername: user.user_metadata?.user_name,
+        githubToken: user.app_metadata?.provider === 'github' ? supabaseSession.provider_token : undefined,
+        githubUsername: user.user_metadata?.user_name || user.user_metadata?.preferred_username,
         googleId: user.user_metadata?.sub,
         emailVerified: user.email_confirmed_at !== null,
         createdAt: new Date(user.created_at),
@@ -195,6 +197,7 @@ export class AuthService {
       };
     }
 
+    // Check if we have a GitHub token from the session
     if (!this.session?.user.githubToken) {
       return { repositories: [], error: 'GitHub token not available. Please reconnect your GitHub account.' };
     }
@@ -211,6 +214,7 @@ export class AuthService {
 
       return { repositories: data, error: null };
     } catch (error) {
+      console.error('GitHub API error:', error);
       return { repositories: [], error: 'Failed to fetch GitHub repositories.' };
     }
   }
@@ -219,11 +223,24 @@ export class AuthService {
     if (isDemoMode()) {
       // Return mock content in demo mode
       return {
-        content: {
-          type: 'file',
-          content: 'console.log("Hello, World!");',
-          name: 'index.js'
-        },
+        content: [
+          {
+            type: 'file',
+            name: 'index.js',
+            path: 'index.js',
+            content: 'console.log("Hello, World!");',
+            size: 28,
+            updated_at: new Date().toISOString()
+          },
+          {
+            type: 'file',
+            name: 'package.json',
+            path: 'package.json',
+            content: '{"name":"demo-repo","version":"1.0.0"}',
+            size: 42,
+            updated_at: new Date().toISOString()
+          }
+        ],
         error: null
       };
     }
@@ -237,14 +254,72 @@ export class AuthService {
         auth: this.session.user.githubToken
       });
 
+      // If path is empty, list repository contents
+      if (!path) {
+        const { data } = await octokit.rest.repos.getContent({
+          owner,
+          repo,
+          path: ''
+        });
+        
+        // If data is an array, it's a directory listing
+        if (Array.isArray(data)) {
+          // For each file, get its content if it's not too large
+          const contentPromises = data.map(async (item) => {
+            if (item.type === 'file' && item.size < 100000) { // Skip files larger than 100KB
+              try {
+                const fileResponse = await octokit.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: item.path
+                });
+                
+                const fileData = fileResponse.data as any;
+                // GitHub API returns content as base64
+                if (fileData.content && fileData.encoding === 'base64') {
+                  const content = atob(fileData.content.replace(/\n/g, ''));
+                  return { ...item, content };
+                }
+                
+                return item;
+              } catch (error) {
+                console.error(`Error fetching content for ${item.path}:`, error);
+                return item;
+              }
+            }
+            return item;
+          });
+          
+          const contentWithData = await Promise.all(contentPromises);
+          return { content: contentWithData, error: null };
+        }
+        
+        // If data is not an array, it's a single file
+        const fileData = data as any;
+        if (fileData.content && fileData.encoding === 'base64') {
+          const content = atob(fileData.content.replace(/\n/g, ''));
+          return { content: { ...fileData, content }, error: null };
+        }
+        
+        return { content: data, error: null };
+      }
+      
+      // If path is specified, get that specific file or directory
       const { data } = await octokit.rest.repos.getContent({
         owner,
         repo,
         path
       });
-
+      
+      // Handle file content
+      if (!Array.isArray(data) && data.type === 'file' && data.content && data.encoding === 'base64') {
+        const content = atob(data.content.replace(/\n/g, ''));
+        return { content: { ...data, content }, error: null };
+      }
+      
       return { content: data, error: null };
     } catch (error) {
+      console.error('GitHub API error:', error);
       return { content: null, error: 'Failed to fetch repository content.' };
     }
   }
@@ -348,11 +423,16 @@ export class AuthService {
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'repo user:email read:user'
         },
       });
       
       if (error) {
         return { error };
+      }
+      
+      if (data.url) {
+        window.location.href = data.url;
       }
       
       return { url: data.url, error: undefined };
@@ -383,6 +463,10 @@ export class AuthService {
       
       if (error) {
         return { error };
+      }
+      
+      if (data.url) {
+        window.location.href = data.url;
       }
       
       return { url: data.url, error: undefined };

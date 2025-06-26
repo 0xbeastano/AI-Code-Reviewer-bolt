@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { Github, GitBranch, Code2, Link, Check, X, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Github, GitBranch, Code2, Link, Check, X, Settings, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useAuth } from '../Auth/AuthProvider';
+import { authService } from '../../lib/auth';
+import { supabase } from '../../lib/supabase';
 
 interface Integration {
   id: string;
@@ -14,15 +17,14 @@ interface Integration {
 }
 
 const IntegrationSettings: React.FC = () => {
+  const { user } = useAuth();
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
       id: 'github',
       name: 'GitHub',
       description: 'Connect your GitHub repositories for automated code reviews',
       icon: <Github className="w-6 h-6" />,
-      connected: true,
-      lastSync: new Date('2024-01-20T10:30:00'),
-      repositories: 12
+      connected: false
     },
     {
       id: 'gitlab',
@@ -41,20 +43,71 @@ const IntegrationSettings: React.FC = () => {
   ]);
 
   const [isConnecting, setIsConnecting] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if GitHub is connected
+  useEffect(() => {
+    const checkGitHubConnection = async () => {
+      setIsLoading(true);
+      try {
+        // Check if user has GitHub provider or token
+        const isGitHubConnected = user?.provider === 'github' || !!user?.githubToken;
+        
+        if (isGitHubConnected) {
+          // Get repository count
+          const { repositories, error } = await authService.getGitHubRepositories();
+          
+          if (!error) {
+            // Update GitHub integration status
+            setIntegrations(prev => prev.map(integration => 
+              integration.id === 'github'
+                ? { 
+                    ...integration, 
+                    connected: true,
+                    lastSync: new Date(),
+                    repositories: repositories.length
+                  }
+                : integration
+            ));
+          }
+        }
+      } catch (error) {
+        console.error('Error checking GitHub connection:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) {
+      checkGitHubConnection();
+    }
+  }, [user]);
 
   const handleConnect = async (integrationId: string) => {
     setIsConnecting(integrationId);
     try {
-      // Simulate OAuth flow
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setIntegrations(prev => prev.map(integration => 
-        integration.id === integrationId 
-          ? { ...integration, connected: true, lastSync: new Date(), repositories: Math.floor(Math.random() * 20) + 1 }
-          : integration
-      ));
-      
-      toast.success(`Successfully connected to ${integrations.find(i => i.id === integrationId)?.name}`);
+      if (integrationId === 'github') {
+        // Store current location for redirect after auth
+        sessionStorage.setItem('auth_return_to', window.location.pathname);
+        
+        const { error } = await authService.signInWithGitHub();
+        
+        if (error) {
+          toast.error(error.message);
+        }
+        // Redirect is handled in the signInWithGitHub function
+      } else {
+        // Simulate OAuth flow for other providers
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        setIntegrations(prev => prev.map(integration => 
+          integration.id === integrationId 
+            ? { ...integration, connected: true, lastSync: new Date(), repositories: Math.floor(Math.random() * 20) + 1 }
+            : integration
+        ));
+        
+        toast.success(`Successfully connected to ${integrations.find(i => i.id === integrationId)?.name}`);
+      }
     } catch (error) {
       toast.error('Failed to connect integration');
     } finally {
@@ -64,13 +117,17 @@ const IntegrationSettings: React.FC = () => {
 
   const handleDisconnect = async (integrationId: string) => {
     try {
+      if (integrationId === 'github' && supabase && user) {
+        // In a real implementation, you would revoke the GitHub token
+        // For now, we'll just update the UI
+        toast.success('Disconnected from GitHub');
+      }
+      
       setIntegrations(prev => prev.map(integration => 
         integration.id === integrationId 
           ? { ...integration, connected: false, lastSync: undefined, repositories: undefined }
           : integration
       ));
-      
-      toast.success(`Disconnected from ${integrations.find(i => i.id === integrationId)?.name}`);
     } catch (error) {
       toast.error('Failed to disconnect integration');
     }
@@ -78,15 +135,75 @@ const IntegrationSettings: React.FC = () => {
 
   const handleSync = async (integrationId: string) => {
     try {
-      setIntegrations(prev => prev.map(integration => 
-        integration.id === integrationId 
-          ? { ...integration, lastSync: new Date() }
-          : integration
-      ));
-      
-      toast.success('Repositories synced successfully');
+      if (integrationId === 'github') {
+        setIsConnecting('github');
+        const { repositories, error } = await authService.getGitHubRepositories();
+        
+        if (error) {
+          toast.error(error);
+        } else {
+          setIntegrations(prev => prev.map(integration => 
+            integration.id === 'github'
+              ? { 
+                  ...integration, 
+                  connected: true,
+                  lastSync: new Date(),
+                  repositories: repositories.length
+                }
+              : integration
+          ));
+          
+          // Save repositories to Supabase
+          if (supabase && user) {
+            try {
+              // For each repository, upsert to Supabase
+              const promises = repositories.map(async (repo) => {
+                const { error } = await supabase
+                  .from('repositories')
+                  .upsert({
+                    user_id: user.id,
+                    name: repo.name,
+                    full_name: repo.full_name,
+                    provider: 'github',
+                    url: repo.html_url,
+                    language: repo.language,
+                    is_private: repo.private,
+                    last_sync: new Date().toISOString(),
+                    status: 'active',
+                    updated_at: new Date().toISOString()
+                  }, {
+                    onConflict: 'user_id, full_name'
+                  });
+                  
+                if (error) {
+                  console.error('Error saving repository:', error);
+                }
+              });
+              
+              await Promise.all(promises);
+              toast.success('Repositories synced successfully');
+            } catch (error) {
+              console.error('Error saving repositories to Supabase:', error);
+              toast.error('Failed to sync repositories');
+            }
+          }
+        }
+        setIsConnecting(null);
+      } else {
+        // Simulate sync for other providers
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        setIntegrations(prev => prev.map(integration => 
+          integration.id === integrationId 
+            ? { ...integration, lastSync: new Date() }
+            : integration
+        ));
+        
+        toast.success('Repositories synced successfully');
+      }
     } catch (error) {
       toast.error('Failed to sync repositories');
+      setIsConnecting(null);
     }
   };
 
@@ -113,85 +230,97 @@ const IntegrationSettings: React.FC = () => {
         </div>
 
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {integrations.map((integration) => (
-            <div key={integration.id} className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className={`p-3 rounded-lg ${
-                    integration.connected 
-                      ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                  }`}>
-                    {integration.icon}
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-medium text-gray-900 dark:text-white">
-                        {integration.name}
-                      </h4>
-                      {integration.connected && (
-                        <div className="flex items-center space-x-1">
-                          <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                            Connected
-                          </span>
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">Loading integrations...</p>
+            </div>
+          ) : (
+            integrations.map((integration) => (
+              <div key={integration.id} className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className={`p-3 rounded-lg ${
+                      integration.connected 
+                        ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                    }`}>
+                      {integration.icon}
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {integration.name}
+                        </h4>
+                        {integration.connected && (
+                          <div className="flex items-center space-x-1">
+                            <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                              Connected
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {integration.description}
+                      </p>
+                      
+                      {integration.connected && integration.lastSync && (
+                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          <span>Last sync: {integration.lastSync.toLocaleString()}</span>
+                          {integration.repositories && (
+                            <span>{integration.repositories} repositories</span>
+                          )}
                         </div>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {integration.description}
-                    </p>
-                    
-                    {integration.connected && integration.lastSync && (
-                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span>Last sync: {integration.lastSync.toLocaleString()}</span>
-                        {integration.repositories && (
-                          <span>{integration.repositories} repositories</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {integration.connected ? (
+                      <>
+                        <button
+                          onClick={() => handleSync(integration.id)}
+                          disabled={isConnecting === integration.id}
+                          className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                        >
+                          {isConnecting === integration.id ? (
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Settings className="w-4 h-4 mr-2" />
+                          )}
+                          {isConnecting === integration.id ? 'Syncing...' : 'Sync'}
+                        </button>
+                        <button
+                          onClick={() => handleDisconnect(integration.id)}
+                          className="flex items-center px-3 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Disconnect
+                        </button>
+                      </>
+                    ) : (
+                      <motion.button
+                        onClick={() => handleConnect(integration.id)}
+                        disabled={isConnecting === integration.id}
+                        className="flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                        whileHover={{ scale: isConnecting === integration.id ? 1 : 1.02 }}
+                        whileTap={{ scale: isConnecting === integration.id ? 1 : 0.98 }}
+                      >
+                        {isConnecting === integration.id ? (
+                          <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <Link className="w-4 h-4 mr-2" />
                         )}
-                      </div>
+                        {isConnecting === integration.id ? 'Connecting...' : 'Connect'}
+                      </motion.button>
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  {integration.connected ? (
-                    <>
-                      <button
-                        onClick={() => handleSync(integration.id)}
-                        className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Sync
-                      </button>
-                      <button
-                        onClick={() => handleDisconnect(integration.id)}
-                        className="flex items-center px-3 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Disconnect
-                      </button>
-                    </>
-                  ) : (
-                    <motion.button
-                      onClick={() => handleConnect(integration.id)}
-                      disabled={isConnecting === integration.id}
-                      className="flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-                      whileHover={{ scale: isConnecting === integration.id ? 1 : 1.02 }}
-                      whileTap={{ scale: isConnecting === integration.id ? 1 : 0.98 }}
-                    >
-                      {isConnecting === integration.id ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      ) : (
-                        <Link className="w-4 h-4 mr-2" />
-                      )}
-                      {isConnecting === integration.id ? 'Connecting...' : 'Connect'}
-                    </motion.button>
-                  )}
-                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
@@ -217,7 +346,10 @@ const IntegrationSettings: React.FC = () => {
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white font-mono text-sm"
               />
               <button
-                onClick={() => navigator.clipboard.writeText('https://api.codereviewer.ai/webhooks/github')}
+                onClick={() => {
+                  navigator.clipboard.writeText('https://api.codereviewer.ai/webhooks/github');
+                  toast.success('Webhook URL copied to clipboard');
+                }}
                 className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 Copy

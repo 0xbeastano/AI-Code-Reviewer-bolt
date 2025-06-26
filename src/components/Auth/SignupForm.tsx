@@ -72,6 +72,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const handleGitHubSignIn = async () => {
     setOauthLoading('github');
     try {
+      // Store current location for redirect after auth
+      sessionStorage.setItem('auth_return_to', window.location.pathname);
+      
       const { error } = await signInWithGitHub();
       
       if (error) {
@@ -88,6 +91,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const handleGoogleSignIn = async () => {
     setOauthLoading('google');
     try {
+      // Store current location for redirect after auth
+      sessionStorage.setItem('auth_return_to', window.location.pathname);
+      
       const { error } = await signInWithGoogle();
       
       if (error) {

@@ -36,10 +36,11 @@ const demoUser = {
   user_metadata: {
     full_name: 'Demo User',
     avatar_url: 'https://ui-avatars.com/api/?name=Demo+User&background=random',
-    role: 'developer'
+    role: 'developer',
+    user_name: 'demo-user' // GitHub username
   },
   app_metadata: {
-    provider: 'email'
+    provider: 'github'
   },
   created_at: new Date().toISOString(),
   last_sign_in_at: new Date().toISOString(),
@@ -218,6 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'repo user:email read:user'
         },
       });
       
