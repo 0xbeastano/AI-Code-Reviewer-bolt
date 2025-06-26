@@ -9,17 +9,18 @@ import {
   Download, 
   Copy, 
   Check, 
-  Code2, 
-  FileCode, 
-  Database,
+  Play, 
+  Code, 
+  Eye, 
+  AlertCircle, 
+  CheckCircle as CheckCircleIcon, 
+  Zap, 
   Shield,
-  Zap,
-  Eye,
   Wrench,
   BarChart3,
   Brain,
   Sparkles,
-  Play
+  Play as PlayIcon
 } from 'lucide-react';
 import { AnalysisResult, Issue, QualityMetrics } from '../../types';
 import CodeEditor from '../CodeEditor/CodeEditor';
@@ -78,6 +79,11 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     }
   }, [results, selectedFile]);
 
+  // Format percentage to always show as integer
+  const formatPercentage = (value: number) => {
+    return Math.round(value);
+  };
+
   const getMetricColor = (value: number, reverse = false) => {
     if (reverse) {
       if (value >= 80) return 'text-error-600 dark:text-error-400';
@@ -129,11 +135,6 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       console.error('Failed to apply suggestion:', error);
       toast.error('Failed to apply suggestion');
     }
-  };
-
-  // Format percentage to always show as integer
-  const formatPercentage = (value: number) => {
-    return Math.round(value);
   };
 
   return (
@@ -804,7 +805,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                         {[
                           { name: 'Security', value: selectedFile.metrics.security, color: 'green', icon: Shield },
                           { name: 'Performance', value: selectedFile.metrics.performance, color: 'blue', icon: Zap },
-                          { name: 'Maintainability', value: selectedFile.metrics.maintainability, color: 'purple', icon: CheckCircle },
+                          { name: 'Maintainability', value: selectedFile.metrics.maintainability, color: 'purple', icon: CheckCircleIcon },
                           { name: 'Complexity', value: selectedFile.metrics.complexity, color: 'yellow', icon: AlertTriangle, reverse: true }
                         ].map((metric, index) => (
                           <motion.div 
