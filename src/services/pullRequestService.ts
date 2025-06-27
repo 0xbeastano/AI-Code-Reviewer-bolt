@@ -795,7 +795,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: \`${window.location.origin}/auth/reset-password`,
       });
       return { error };
     } catch (error) {
@@ -814,13 +814,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: \`${window.location.origin}/auth/callback`,
           scopes: 'repo user:email read:user'
         },
       });
       
       if (error) {
-        toast.error(`GitHub sign in failed: ${error.message}`);
+        toast.error(\`GitHub sign in failed: ${error.message}`);
         return { error };
       }
       
@@ -846,12 +846,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: \`${window.location.origin}/auth/callback`,
         },
       });
       
       if (error) {
-        toast.error(`Google sign in failed: ${error.message}`);
+        toast.error(\`Google sign in failed: ${error.message}`);
         return { error };
       }
       
@@ -1226,7 +1226,7 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
   // Transform data for chart
   const chartData = data.quality.map((quality, index) => {
     const dataPoint: any = {
-      day: `Day ${index + 1}`,
+      day: \`Day ${index + 1}`,
       quality,
       security: data.security[index],
       performance: data.performance[index],
