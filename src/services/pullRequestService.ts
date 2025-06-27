@@ -656,7 +656,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
           additions: 80,
           deletions: 10,
           changes: 90,
-          patch: '@@ -1,6 +1,7 @@\n import React, { createContext, useContext, useEffect, useState } from \'react\';\n import { User, Session } from \'@supabase/supabase-js\';\n import { supabase, isDemoMode } from \'../../lib/supabase\';\n+import toast from \'react-hot-toast\';\n \n interface AuthContextType {\n   user: User | null;\n@@ -10,6 +11,8 @@ interface AuthContextType {\n   signIn: (email: string, password: string) => Promise<{ error: any }>;\n   signUp: (email: string, password: string) => Promise<{ error: any }>;\n   signOut: () => Promise<void>;\n+  signInWithGitHub: () => Promise<{ error: any; url?: string }>;\n+  signInWithGoogle: () => Promise<{ error: any; url?: string }>;\n   resetPassword: (email: string) => Promise<{ error: any }>;\n }\n \n@@ -112,12 +115,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ childre\n   const resetPassword = async (email: string) => {\n     if (isDemoMode() || !supabase) {\n       console.log(\'🔄 Demo mode: Password reset simulated\');\n       return { error: null };\n     }\n \n     try {\n       const { error } = await supabase.auth.resetPasswordForEmail(email, {\n-        redirectTo: `${window.location.origin}/reset-password`,\n+        redirectTo: `${window.location.origin}/auth/reset-password`,\n       });\n       return { error };\n     } catch (error) {\n       console.error(\'Reset password error:\', error);\n       return { error };\n     }\n   };\n+\n+  const signInWithGitHub = async () => {\n+    if (isDemoMode() || !supabase) {\n+      console.log(\'🔄 Demo mode: GitHub sign in simulated\');\n+      return { error: null };\n+    }\n+\n+    try {\n+      const { data, error } = await supabase.auth.signInWithOAuth({\n+        provider: \'github\',\n+        options: {\n+          redirectTo: `${window.location.origin}/auth/callback`,\n+          scopes: \'repo user:email read:user\'\n+        },\n+      });\n+      \n+      if (error) {\n+        toast.error(`GitHub sign in failed: ${error.message}`);\n+        return { error };\n+      }\n+      \n+      if (data.url) {\n+        window.location.href = data.url;\n+      }\n+      \n+      return { url: data.url, error: null };\n+    } catch (error) {\n+      console.error(\'GitHub sign in error:\', error);\n+      toast.error(\'Failed to sign in with GitHub\');\n+      return { error };\n+    }\n+  };\n+\n+  const signInWithGoogle = async () => {\n+    if (isDemoMode() || !supabase) {\n+      console.log(\'🔄 Demo mode: Google sign in simulated\');\n+      return { error: null };\n+    }\n+\n+    try {\n+      const { data, error } = await supabase.auth.signInWithOAuth({\n+        provider: \'google\',\n+        options: {\n+          redirectTo: `${window.location.origin}/auth/callback`,\n+        },\n+      });\n+      \n+      if (error) {\n+        toast.error(`Google sign in failed: ${error.message}`);\n+        return { error };\n+      }\n+      \n+      if (data.url) {\n+        window.location.href = data.url;\n+      }\n+      \n+      return { url: data.url, error: null };\n+    } catch (error) {\n+      console.error(\'Google sign in error:\', error);\n+      toast.error(\'Failed to sign in with Google\');\n+      return { error };\n+    }\n+  };\n \n   const value = {\n     user,\n@@ -127,6 +190,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ childre\n     signIn,\n     signUp,\n     signOut,\n+    signInWithGitHub,\n+    signInWithGoogle,\n     resetPassword,\n   };\n ',
+          patch: '@@ -1,6 +1,7 @@\n import React, { createContext, useContext, useEffect, useState } from \'react\';\n import { User, Session } from \'@supabase/supabase-js\';\n import { supabase, isDemoMode } from \'../../lib/supabase\';\n+import toast from \'react-hot-toast\';\n \n interface AuthContextType {\n   user: User | null;\n@@ -10,6 +11,8 @@ interface AuthContextType {\n   signIn: (email: string, password: string) => Promise<{ error: any }>;\n   signUp: (email: string, password: string) => Promise<{ error: any }>;\n   signOut: () => Promise<void>;\n+  signInWithGitHub: () => Promise<{ error: any; url?: string }>;\n+  signInWithGoogle: () => Promise<{ error: any; url?: string }>;\n   resetPassword: (email: string) => Promise<{ error: any }>;\n }\n \n@@ -112,12 +115,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ childre\n   const resetPassword = async (email: string) => {\n     if (isDemoMode() || !supabase) {\n       console.log(\'🔄 Demo mode: Password reset simulated\');\n       return { error: null };\n     }\n \n     try {\n       const { error } = await supabase.auth.resetPasswordForEmail(email, {\n-        redirectTo: `${window.location.origin}/auth/reset-password`,\n+        redirectTo: window.location.origin + \'/auth/reset-password\',\n       });\n       return { error };\n     } catch (error) {\n       console.error(\'Reset password error:\', error);\n       return { error };\n     }\n   };\n+\n+  const signInWithGitHub = async () => {\n+    if (isDemoMode() || !supabase) {\n+      console.log(\'🔄 Demo mode: GitHub sign in simulated\');\n+      return { error: null };\n+    }\n+\n+    try {\n+      const { data, error } = await supabase.auth.signInWithOAuth({\n+        provider: \'github\',\n+        options: {\n+          redirectTo: window.location.origin + \'/auth/callback\',\n+          scopes: \'repo user:email read:user\'\n+        },\n+      });\n+      \n+      if (error) {\n+        toast.error(`GitHub sign in failed: ${error.message}`);\n+        return { error };\n+      }\n+      \n+      if (data.url) {\n+        window.location.href = data.url;\n+      }\n+      \n+      return { url: data.url, error: null };\n+    } catch (error) {\n+      console.error(\'GitHub sign in error:\', error);\n+      toast.error(\'Failed to sign in with GitHub\');\n+      return { error };\n+    }\n+  };\n+\n+  const signInWithGoogle = async () => {\n+    if (isDemoMode() || !supabase) {\n+      console.log(\'🔄 Demo mode: Google sign in simulated\');\n+      return { error: null };\n+    }\n+\n+    try {\n+      const { data, error } = await supabase.auth.signInWithOAuth({\n+        provider: \'google\',\n+        options: {\n+          redirectTo: window.location.origin + \'/auth/callback\',\n+        },\n+      });\n+      \n+      if (error) {\n+        toast.error(`Google sign in failed: ${error.message}`);\n+        return { error };\n+      }\n+      \n+      if (data.url) {\n+        window.location.href = data.url;\n+      }\n+      \n+      return { url: data.url, error: null };\n+    } catch (error) {\n+      console.error(\'Google sign in error:\', error);\n+      toast.error(\'Failed to sign in with Google\');\n+      return { error };\n+    }\n+  };\n \n   const value = {\n     user,\n@@ -127,6 +190,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ childre\n     signIn,\n     signUp,\n     signOut,\n+    signInWithGitHub,\n+    signInWithGoogle,\n     resetPassword,\n   };\n ',
           content: `import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isDemoMode } from '../../lib/supabase';
@@ -795,7 +795,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: \`${window.location.origin}/auth/reset-password`,
+        redirectTo: window.location.origin + '/auth/reset-password',
       });
       return { error };
     } catch (error) {
@@ -814,13 +814,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: \`${window.location.origin}/auth/callback`,
+          redirectTo: window.location.origin + '/auth/callback',
           scopes: 'repo user:email read:user'
         },
       });
       
       if (error) {
-        toast.error(\`GitHub sign in failed: ${error.message}`);
+        toast.error(\`GitHub sign in failed: ${error.message}\`);
         return { error };
       }
       
@@ -846,12 +846,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: \`${window.location.origin}/auth/callback`,
+          redirectTo: window.location.origin + '/auth/callback',
         },
       });
       
       if (error) {
-        toast.error(\`Google sign in failed: ${error.message}`);
+        toast.error(\`Google sign in failed: ${error.message}\`);
         return { error };
       }
       
