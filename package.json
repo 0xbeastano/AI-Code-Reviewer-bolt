@@ -21,7 +21,7 @@
     "@monaco-editor/react": "^4.6.0",
     "@octokit/auth-oauth-app": "^7.0.1",
     "@octokit/rest": "^20.0.2",
-    "@supabase/supabase-js": "^2.39.0",
+    "@supabase/supabase-js": "^2.50.2",
     "acorn": "^8.11.3",
     "acorn-walk": "^8.3.2",
     "axios": "^1.6.7",
