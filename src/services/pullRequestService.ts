@@ -795,7 +795,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: \`${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
       return { error };
     } catch (error) {
@@ -814,13 +814,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: \`${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback`,
           scopes: 'repo user:email read:user'
         },
       });
       
       if (error) {
-        toast.error(\`GitHub sign in failed: ${error.message}`);
+        toast.error(`GitHub sign in failed: ${error.message}`);
         return { error };
       }
       
@@ -846,12 +846,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: \`${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       
       if (error) {
-        toast.error(\`Google sign in failed: ${error.message}`);
+        toast.error(`Google sign in failed: ${error.message}`);
         return { error };
       }
       
@@ -1118,7 +1118,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
     >
       <div className="flex items-center justify-between mb-4">
         <motion.div 
-          className={\`p-3 rounded-lg border ${colorClasses[color]}`}
+          className={\`p-3 rounded-lg border ${colorClasses[color]}\`}
           whileHover={{ rotate: 10 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
@@ -1149,7 +1149,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
                 : trend.direction === 'down'
                 ? 'text-red-600 dark:text-red-400'
                 : 'text-gray-600 dark:text-gray-400'
-            }`}>
+            }\`}>
               {trend.direction === 'up' && <TrendingUp className="w-4 h-4" />}
               {trend.direction === 'down' && <TrendingDown className="w-4 h-4" />}
               <span>+{trend.value}%</span>
@@ -1226,7 +1226,7 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
   // Transform data for chart
   const chartData = data.quality.map((quality, index) => {
     const dataPoint: any = {
-      day: \`Day ${index + 1}`,
+      day: `Day ${index + 1}`,
       quality,
       security: data.security[index],
       performance: data.performance[index],
