@@ -580,11 +580,6 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     formState: { errors },
     watch
   } = useForm<SignupForm>({
-        }
-      ]
-    }
-  }
-}
     resolver: zodResolver(signupSchema)
   });
 
@@ -1234,7 +1229,7 @@ const QualityTrends: React.FC<QualityTrendsProps> = ({ data }) => {
       day: \`Day ${index + 1}`,
       quality,
       security: data.security[index],
-      performance: data.performance[index],
+      performance: data.performance[index]
     };
     
     // Add new metrics if available
@@ -1415,7 +1410,7 @@ export default QualityTrends;`,
 
   private getMockPullRequestSummary(pullRequestId: string): PullRequestSummary {
     return {
-      id: \`summary-${Date.now()}`,
+      id: `summary-${Date.now()}`,
       pullRequestId,
       summary: "This PR implements user authentication with GitHub and Google OAuth integration. It adds login and signup forms with proper validation, error handling, and toast notifications. The authentication flow is well-structured with appropriate state management and loading indicators. Security improvements include proper token handling and redirect management.",
       keyChanges: [
