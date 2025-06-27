@@ -83,7 +83,9 @@ Please provide a detailed analysis in JSON format with the following structure:
     "performance": number (0-100, higher is better),
     "coverage": number (0-100, estimated test coverage),
     "duplicateLines": number,
-    "linesOfCode": number
+    "linesOfCode": number,
+    "cyclomaticComplexity": number (0-100, lower is better),
+    "cognitiveComplexity": number (0-100, lower is better)
   }${generateImprovedCode ? ',\n  "improvedCode": "full improved version of the code"' : ''}
 }
 
@@ -94,6 +96,11 @@ Focus on:
 4. Bug detection (logic errors, edge cases, type issues, null pointer exceptions)
 5. Style improvements (formatting, naming conventions, code organization)
 6. Modern language features and patterns
+7. Complexity analysis (both cyclomatic and cognitive complexity)
+
+For complexity metrics:
+- Cyclomatic complexity measures the number of linearly independent paths through the code
+- Cognitive complexity measures how difficult the code is to understand based on nesting, control flow, and logical operations
 
 Provide actionable, specific feedback with clear examples. Be thorough but practical.
 For suggestions, make sure to include actual code snippets from the file in the "before" field and realistic improvements in the "after" field.
@@ -104,7 +111,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
       messages: [
         {
           role: "system",
-          content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable. Always include actual code snippets from the provided code in your suggestions.`
+          content: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable. Always include actual code snippets from the provided code in your suggestions. Pay special attention to complexity metrics, both cyclomatic and cognitive.`
         },
         {
           role: "user",

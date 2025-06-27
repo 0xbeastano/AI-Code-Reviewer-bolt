@@ -42,8 +42,21 @@ export class CodeAnalysisService {
 
   private async analyzeFile(file: CodeFile, projectStructure: ProjectStructure): Promise<AnalysisResult> {
     try {
+      // Calculate cyclomatic complexity programmatically
+      const cyclomaticComplexity = this.projectAnalyzer.calculateCyclomaticComplexity(file.content, file.language);
+      
+      // Estimate cognitive complexity
+      const cognitiveComplexity = this.projectAnalyzer.estimateCognitiveComplexity(file.content, file.language);
+      
       // Use AI service for comprehensive analysis without generating improved code
       const aiAnalysis = await this.aiService.analyzeCode(file.content, file.language, file.path, false);
+      
+      // Merge programmatically calculated metrics with AI-provided metrics
+      const enhancedMetrics = {
+        ...aiAnalysis.metrics,
+        cyclomaticComplexity,
+        cognitiveComplexity
+      };
       
       return {
         fileId: file.path,
@@ -52,7 +65,7 @@ export class CodeAnalysisService {
           ...issue,
           id: `${issue.type}-${issue.line}-${Date.now()}`
         })),
-        metrics: aiAnalysis.metrics,
+        metrics: enhancedMetrics,
         suggestions: aiAnalysis.suggestions.map(suggestion => ({
           ...suggestion,
           id: `${suggestion.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -66,8 +79,14 @@ export class CodeAnalysisService {
   }
 
   private basicAnalyzeFile(file: CodeFile): AnalysisResult {
+    // Calculate cyclomatic complexity programmatically
+    const cyclomaticComplexity = this.projectAnalyzer.calculateCyclomaticComplexity(file.content, file.language);
+    
+    // Estimate cognitive complexity
+    const cognitiveComplexity = this.projectAnalyzer.estimateCognitiveComplexity(file.content, file.language);
+    
     const issues = this.detectBasicIssues(file);
-    const metrics = this.calculateBasicMetrics(file);
+    const metrics = this.calculateBasicMetrics(file, cyclomaticComplexity, cognitiveComplexity);
     const suggestions = this.generateBasicSuggestions(file, issues);
 
     return {
@@ -174,7 +193,7 @@ export class CodeAnalysisService {
     return issues;
   }
 
-  private calculateBasicMetrics(file: CodeFile): QualityMetrics {
+  private calculateBasicMetrics(file: CodeFile, cyclomaticComplexity: number, cognitiveComplexity: number): QualityMetrics {
     const lines = file.content.split('\n');
     const nonEmptyLines = lines.filter(line => line.trim().length > 0);
     const commentLines = lines.filter(line => {
@@ -199,6 +218,13 @@ export class CodeAnalysisService {
     const commentRatio = commentLines.length / Math.max(nonEmptyLines.length, 1);
     const maintainability = Math.min(100, Math.max(0, 90 - normalizedComplexity + (commentRatio * 20)));
     
+    // Normalize cyclomatic complexity to a 0-100 scale (higher is worse)
+    // A value of 1-10 is considered good, 11-20 is moderate, 21+ is complex
+    const normalizedCyclomaticComplexity = Math.min(100, (cyclomaticComplexity / 30) * 100);
+    
+    // Normalize cognitive complexity to a 0-100 scale (higher is worse)
+    const normalizedCognitiveComplexity = Math.min(100, (cognitiveComplexity / 30) * 100);
+    
     return {
       complexity: Math.round(normalizedComplexity),
       maintainability: Math.round(maintainability),
@@ -207,6 +233,8 @@ export class CodeAnalysisService {
       coverage: Math.round(Math.random() * 40 + 60), // Random between 60-100
       duplicateLines: Math.floor(Math.random() * 20),
       linesOfCode: nonEmptyLines.length,
+      cyclomaticComplexity: Math.round(normalizedCyclomaticComplexity),
+      cognitiveComplexity: Math.round(normalizedCognitiveComplexity)
     };
   }
 

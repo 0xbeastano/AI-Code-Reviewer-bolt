@@ -385,6 +385,12 @@ export class AIService {
     const commentRatio = commentLines.length / Math.max(nonEmptyLines.length, 1);
     const maintainability = Math.min(100, Math.max(0, 90 - normalizedComplexity + (commentRatio * 20)));
     
+    // Calculate cyclomatic complexity
+    const cyclomaticComplexity = this.calculateMockCyclomaticComplexity(code, language);
+    
+    // Calculate cognitive complexity
+    const cognitiveComplexity = this.calculateMockCognitiveComplexity(code, language);
+    
     // Generate other metrics
     return {
       complexity: Math.round(normalizedComplexity),
@@ -399,8 +405,78 @@ export class AIService {
       cognitive: Math.round(Math.random() * 50),
       documentation: Math.round(Math.random() * 20 + 80),
       testability: Math.round(Math.random() * 20 + 70),
-      reusability: Math.round(Math.random() * 20 + 70)
+      reusability: Math.round(Math.random() * 20 + 70),
+      cyclomaticComplexity: cyclomaticComplexity,
+      cognitiveComplexity: cognitiveComplexity
     };
+  }
+
+  private calculateMockCyclomaticComplexity(code: string, language: string): number {
+    // Count control flow statements to estimate cyclomatic complexity
+    const controlFlowKeywords = [
+      'if', 'else if', 'else', 'for', 'while', 'do', 'switch', 'case', 'catch', 'try', '&&', '\\|\\|'
+    ];
+    
+    let complexity = 1; // Base complexity
+    
+    // Count occurrences of control flow keywords
+    for (const keyword of controlFlowKeywords) {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'g');
+      const matches = code.match(regex);
+      if (matches) {
+        complexity += matches.length;
+      }
+    }
+    
+    // Normalize to a 0-100 scale (higher is worse)
+    // A value of 1-10 is considered good, 11-20 is moderate, 21+ is complex
+    return Math.min(100, Math.round((complexity / 30) * 100));
+  }
+
+  private calculateMockCognitiveComplexity(code: string, language: string): number {
+    // Cognitive complexity is more about nesting and logical flow
+    // This is a simplified mock calculation
+    
+    // Count nesting levels
+    const lines = code.split('\n');
+    let maxNestingLevel = 0;
+    let currentNestingLevel = 0;
+    
+    for (const line of lines) {
+      // Increase nesting level for opening braces or indentation
+      if (line.includes('{') || line.trim().endsWith(':')) {
+        currentNestingLevel++;
+        maxNestingLevel = Math.max(maxNestingLevel, currentNestingLevel);
+      }
+      
+      // Decrease nesting level for closing braces
+      if (line.includes('}')) {
+        currentNestingLevel = Math.max(0, currentNestingLevel - 1);
+      }
+    }
+    
+    // Count logical operators
+    const logicalOperators = code.match(/&&|\|\||and|or/g) || [];
+    
+    // Count control flow statements
+    const controlFlowKeywords = [
+      'if', 'else if', 'else', 'for', 'while', 'do', 'switch', 'case', 'catch', 'try'
+    ];
+    
+    let controlFlowCount = 0;
+    for (const keyword of controlFlowKeywords) {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'g');
+      const matches = code.match(regex);
+      if (matches) {
+        controlFlowCount += matches.length;
+      }
+    }
+    
+    // Calculate cognitive complexity based on nesting, logical operators, and control flow
+    const cognitiveComplexity = maxNestingLevel * 2 + logicalOperators.length + controlFlowCount;
+    
+    // Normalize to a 0-100 scale (higher is worse)
+    return Math.min(100, Math.round((cognitiveComplexity / 50) * 100));
   }
 
   private generateMockImprovedCode(code: string, language: string): string {

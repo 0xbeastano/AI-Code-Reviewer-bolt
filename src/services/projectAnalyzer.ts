@@ -240,6 +240,291 @@ export class ProjectAnalyzer {
     });
   }
 
+  calculateCyclomaticComplexity(code: string, language: string): number {
+    // Default complexity is 1 (the starting point)
+    let complexity = 1;
+    
+    try {
+      if (language === 'javascript' || language === 'typescript') {
+        // Parse the code into an AST
+        const ast = acorn.parse(code, { 
+          ecmaVersion: 2020, 
+          sourceType: 'module',
+          // Handle JSX for React files
+          allowAwaitOutsideFunction: true,
+          allowImportExportEverywhere: true
+        });
+        
+        // Traverse the AST and count decision points
+        walk.simple(ast, {
+          IfStatement() {
+            complexity++;
+          },
+          ConditionalExpression() {
+            complexity++;
+          },
+          LogicalExpression(node: any) {
+            // Only count && and || operators
+            if (node.operator === '&&' || node.operator === '||') {
+              complexity++;
+            }
+          },
+          ForStatement() {
+            complexity++;
+          },
+          ForInStatement() {
+            complexity++;
+          },
+          ForOfStatement() {
+            complexity++;
+          },
+          WhileStatement() {
+            complexity++;
+          },
+          DoWhileStatement() {
+            complexity++;
+          },
+          SwitchCase() {
+            complexity++;
+          },
+          CatchClause() {
+            complexity++;
+          }
+        });
+      } else if (language === 'python') {
+        // Simple parsing for Python
+        const lines = code.split('\n');
+        
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          
+          // Count control flow statements
+          if (
+            trimmedLine.startsWith('if ') || 
+            trimmedLine.startsWith('elif ') || 
+            trimmedLine.startsWith('for ') || 
+            trimmedLine.startsWith('while ') || 
+            trimmedLine.startsWith('except:') || 
+            trimmedLine.match(/except\s+[\w\d_]+:/)
+          ) {
+            complexity++;
+          }
+          
+          // Count logical operators
+          const andMatches = (trimmedLine.match(/\sand\s/g) || []).length;
+          const orMatches = (trimmedLine.match(/\sor\s/g) || []).length;
+          complexity += andMatches + orMatches;
+        }
+      } else {
+        // For other languages, use a simple regex-based approach
+        const controlFlowKeywords = [
+          'if', 'else if', 'elif', 'for', 'foreach', 'while', 'do', 'case', 'catch', 
+          'switch', '&&', '\\|\\|'
+        ];
+        
+        const regex = new RegExp(`\\b(${controlFlowKeywords.join('|')})\\b`, 'g');
+        const matches = code.match(regex) || [];
+        
+        complexity += matches.length;
+      }
+    } catch (error) {
+      console.error('Error calculating cyclomatic complexity:', error);
+      // Return a default value if parsing fails
+      return 5;
+    }
+    
+    return complexity;
+  }
+
+  estimateCognitiveComplexity(code: string, language: string): number {
+    // This is a simplified estimation of cognitive complexity
+    // A full implementation would require more sophisticated analysis
+    let complexity = 0;
+    
+    try {
+      if (language === 'javascript' || language === 'typescript') {
+        // Parse the code into an AST
+        const ast = acorn.parse(code, { 
+          ecmaVersion: 2020, 
+          sourceType: 'module',
+          allowAwaitOutsideFunction: true,
+          allowImportExportEverywhere: true
+        });
+        
+        // Track nesting level
+        let nestingLevel = 0;
+        
+        // Traverse the AST
+        walk.ancestor(ast, {
+          IfStatement(node: any, ancestors: any[]) {
+            // Base complexity for if statement
+            complexity++;
+            
+            // Add complexity for nesting level
+            complexity += nestingLevel;
+            
+            // Check for else-if chains (B)
+            const parent = ancestors[ancestors.length - 2];
+            if (parent && parent.type === 'IfStatement' && parent.alternate === node) {
+              complexity++;
+            }
+            
+            nestingLevel++;
+          },
+          ForStatement() {
+            complexity++;
+            complexity += nestingLevel;
+            nestingLevel++;
+          },
+          ForInStatement() {
+            complexity++;
+            complexity += nestingLevel;
+            nestingLevel++;
+          },
+          ForOfStatement() {
+            complexity++;
+            complexity += nestingLevel;
+            nestingLevel++;
+          },
+          WhileStatement() {
+            complexity++;
+            complexity += nestingLevel;
+            nestingLevel++;
+          },
+          DoWhileStatement() {
+            complexity++;
+            complexity += nestingLevel;
+            nestingLevel++;
+          },
+          SwitchStatement(node: any) {
+            complexity++;
+            complexity += nestingLevel;
+            
+            // Add complexity for each case
+            if (node.cases) {
+              complexity += node.cases.length;
+            }
+            
+            nestingLevel++;
+          },
+          ConditionalExpression() {
+            complexity++;
+          },
+          LogicalExpression(node: any) {
+            if (node.operator === '&&' || node.operator === '||') {
+              complexity++;
+            }
+          },
+          CatchClause() {
+            complexity++;
+            complexity += nestingLevel;
+          },
+          FunctionDeclaration() {
+            nestingLevel = 0; // Reset nesting level for new function
+          },
+          FunctionExpression() {
+            nestingLevel = 0; // Reset nesting level for new function
+          },
+          ArrowFunctionExpression() {
+            nestingLevel = 0; // Reset nesting level for new function
+          }
+        });
+      } else if (language === 'python') {
+        // Simple parsing for Python
+        const lines = code.split('\n');
+        let indentationLevels: number[] = [];
+        let currentIndentationLevel = 0;
+        
+        for (const line of lines) {
+          // Skip empty lines and comments
+          if (!line.trim() || line.trim().startsWith('#')) {
+            continue;
+          }
+          
+          // Calculate indentation level
+          const indentation = line.search(/\S/);
+          if (indentation >= 0) {
+            if (indentationLevels.length === 0) {
+              indentationLevels.push(indentation);
+              currentIndentationLevel = 0;
+            } else {
+              const baseIndentation = indentationLevels[0];
+              if (indentation > indentationLevels[currentIndentationLevel]) {
+                indentationLevels.push(indentation);
+                currentIndentationLevel++;
+              } else if (indentation < indentationLevels[currentIndentationLevel]) {
+                while (currentIndentationLevel > 0 && indentation < indentationLevels[currentIndentationLevel]) {
+                  indentationLevels.pop();
+                  currentIndentationLevel--;
+                }
+              }
+            }
+          }
+          
+          const trimmedLine = line.trim();
+          
+          // Control flow statements
+          if (
+            trimmedLine.startsWith('if ') || 
+            trimmedLine.startsWith('elif ') || 
+            trimmedLine.startsWith('for ') || 
+            trimmedLine.startsWith('while ') || 
+            trimmedLine.startsWith('except ') || 
+            trimmedLine.startsWith('with ')
+          ) {
+            complexity++;
+            complexity += currentIndentationLevel; // Add complexity for nesting
+          }
+          
+          // Logical operators
+          const andMatches = (trimmedLine.match(/\sand\s/g) || []).length;
+          const orMatches = (trimmedLine.match(/\sor\s/g) || []).length;
+          complexity += andMatches + orMatches;
+        }
+      } else {
+        // For other languages, use a simplified approach
+        // Count control flow keywords and estimate nesting based on braces
+        const lines = code.split('\n');
+        let braceLevel = 0;
+        
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          
+          // Count opening and closing braces to track nesting
+          const openBraces = (trimmedLine.match(/{/g) || []).length;
+          const closeBraces = (trimmedLine.match(/}/g) || []).length;
+          
+          braceLevel += openBraces - closeBraces;
+          
+          // Control flow keywords
+          if (
+            trimmedLine.includes('if ') || 
+            trimmedLine.includes('else ') || 
+            trimmedLine.includes('for ') || 
+            trimmedLine.includes('while ') || 
+            trimmedLine.includes('switch ') || 
+            trimmedLine.includes('case ') || 
+            trimmedLine.includes('catch ')
+          ) {
+            complexity++;
+            complexity += braceLevel; // Add complexity for nesting
+          }
+          
+          // Logical operators
+          const andMatches = (trimmedLine.match(/&&/g) || []).length;
+          const orMatches = (trimmedLine.match(/\|\|/g) || []).length;
+          complexity += andMatches + orMatches;
+        }
+      }
+    } catch (error) {
+      console.error('Error estimating cognitive complexity:', error);
+      // Return a default value if parsing fails
+      return 10;
+    }
+    
+    return complexity;
+  }
+
   generateProjectReport(structure: ProjectStructure): string {
     return `
 # Project Analysis Report

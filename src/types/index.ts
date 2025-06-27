@@ -50,6 +50,9 @@ export interface QualityMetrics {
   documentation?: number;
   testability?: number;
   reusability?: number;
+  // New complexity metrics
+  cyclomaticComplexity?: number;
+  cognitiveComplexity?: number;
 }
 
 export interface Suggestion {
