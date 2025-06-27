@@ -4,9 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Demo mode flag - set to true for testing without Supabase
-let demoMode = true;
-
 // Check if Supabase is properly configured
 const isSupabaseConfigured = supabaseUrl && 
   supabaseAnonKey && 
@@ -18,10 +15,7 @@ let supabaseClient = null;
 
 try {
   if (isSupabaseConfigured) {
-    console.log('🔍 Initializing Supabase with:', { 
-      url: supabaseUrl?.substring(0, 15) + '...',
-      keyLength: supabaseAnonKey?.length || 0
-    });
+    console.log('🔍 Initializing Supabase...');
     
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -31,27 +25,22 @@ try {
       }
     });
     console.log('🚀 Supabase client initialized successfully');
-    demoMode = false;
   } else {
     console.warn('⚠️ Supabase configuration missing or invalid, enabling demo mode');
-    demoMode = true;
   }
 } catch (error) {
   console.error('⚠️ Failed to initialize Supabase client:', error);
-  demoMode = true;
 }
 
 // Export the client
 export const supabase = supabaseClient;
 
 // Demo mode functions
-export const isDemoMode = () => demoMode;
+export const isDemoMode = () => !isSupabaseConfigured;
 export const enableDemoMode = () => {
-  demoMode = true;
   console.log('🔄 Demo mode enabled');
 };
 export const disableDemoMode = () => {
-  demoMode = false;
   console.log('🔄 Demo mode disabled');
 };
 
