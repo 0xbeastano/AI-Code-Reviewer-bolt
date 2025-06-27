@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, Plus, Settings, Download, GitBranch, Zap, ChevronRight, Cloud, GitPullRequest } from 'lucide-react';
+import { Play, Plus, Settings, Download, GitBranch, Zap, ChevronRight, Cloud } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Repository {
@@ -38,18 +38,14 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories = [] }) => {
       onClick: () => navigate('/settings?tab=integrations')
     },
     {
-      id: 'pull-requests',
-      title: 'Analyze Pull Requests',
-      description: 'Get AI summaries of your PRs',
-      icon: GitPullRequest,
-      color: 'bg-blue-600 hover:bg-blue-700',
+      id: 'quick-scan',
+      title: 'Quick Security Scan',
+      description: 'Run security analysis on latest commits',
+      icon: Zap,
+      color: 'bg-orange-600 hover:bg-orange-700',
       onClick: () => {
         if (repositories.length > 0) {
-          const repo = repositories[0];
-          const [owner, repoName] = repo.name.includes('/') ? repo.name.split('/') : ['demo-user', repo.name];
-          navigate(`/pull-requests/${owner}/${repoName}`);
-        } else {
-          navigate('/settings?tab=integrations');
+          navigate(`/review?repository=${repositories[0].id}&type=security`);
         }
       }
     },

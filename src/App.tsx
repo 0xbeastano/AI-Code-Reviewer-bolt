@@ -22,7 +22,6 @@ import PricingPage from './pages/PricingPage';
 import DocumentationPage from './pages/DocumentationPage';
 import ReviewResults from './pages/ReviewResults';
 import DeployPage from './pages/DeployPage';
-import PullRequestReview from './pages/PullRequestReview';
 import { ResetPasswordConfirm } from './components/Auth/ResetPasswordConfirm';
 import './index.css';
 
@@ -113,13 +112,6 @@ function App() {
                           <ProtectedRoute>
                             <Layout>
                               <DeployPage />
-                            </Layout>
-                          </ProtectedRoute>
-                        } />
-                        <Route path="/pull-requests/:owner/:repo" element={
-                          <ProtectedRoute>
-                            <Layout>
-                              <PullRequestReview />
                             </Layout>
                           </ProtectedRoute>
                         } />

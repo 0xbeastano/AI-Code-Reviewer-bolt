@@ -146,44 +146,6 @@ export class AIService {
     }
   }
 
-  async generatePRSummary(
-    prompt: string,
-    modelId: string = this.defaultModel
-  ): Promise<any> {
-    try {
-      if (isDemoMode()) {
-        return this.getMockPRSummary();
-      }
-
-      const user = authService.getCurrentUser();
-      const userId = user?.id || 'anonymous';
-
-      // Call Supabase Edge Function
-      const response = await fetch(`${this.apiUrl}/functions/v1/pr-summary`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          prompt,
-          modelId,
-          userId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('PR summary generation failed:', error);
-      return this.getMockPRSummary();
-    }
-  }
-
   async generateDocumentation(
     code: string, 
     language: string,
@@ -624,40 +586,6 @@ def test_process_input_special_chars():
       ],
       coverage: 85,
       framework
-    };
-  }
-
-  private getMockPRSummary(): any {
-    return {
-      summary: "This PR implements user authentication with GitHub and Google OAuth integration. It adds login and signup forms with proper validation, error handling, and toast notifications. The authentication flow is well-structured with appropriate state management and loading indicators. Security improvements include proper token handling and redirect management.",
-      keyChanges: [
-        "Added GitHub and Google OAuth authentication methods to AuthProvider",
-        "Created LoginForm and SignupForm components with form validation",
-        "Implemented proper error handling and loading states",
-        "Updated password reset flow with correct redirect URLs",
-        "Added toast notifications for user feedback"
-      ],
-      potentialIssues: [
-        "Consider adding rate limiting for authentication attempts to prevent brute force attacks",
-        "The demo mode simulation might not fully represent the actual OAuth flow",
-        "Error messages could be more specific to help users troubleshoot issues"
-      ],
-      suggestedFeedback: [
-        "Add unit tests for the authentication components",
-        "Consider implementing remember me functionality for longer sessions",
-        "Add more comprehensive form validation feedback"
-      ],
-      securityConsiderations: [
-        "Ensure CSRF protection is implemented for authentication endpoints",
-        "Store tokens securely and implement proper token refresh mechanisms",
-        "Consider adding multi-factor authentication in the future"
-      ],
-      testingRecommendations: [
-        "Test OAuth flows with actual GitHub and Google accounts",
-        "Verify error handling for various failure scenarios",
-        "Test the authentication persistence across page refreshes"
-      ],
-      confidence: 0.92
     };
   }
 
