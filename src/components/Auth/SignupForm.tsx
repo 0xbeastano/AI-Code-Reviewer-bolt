@@ -58,11 +58,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       if (error) {
         console.error('Signup error:', error);
         
-        // Check for user already exists error
-        if (error.message && (
-          error.message.includes('User already registered') ||
-          error.message.includes('user_already_exists')
-        )) {
+        // Check for user already exists error using error code
+        if (error.code === 'user_already_exists') {
           toast.error('An account with this email already exists. Please sign in instead.');
           // Optionally switch to login form automatically
           setTimeout(() => {
