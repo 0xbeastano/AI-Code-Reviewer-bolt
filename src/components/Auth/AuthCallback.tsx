@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, isDemoMode } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 export const AuthCallback: React.FC = () => {
@@ -10,7 +10,26 @@ export const AuthCallback: React.FC = () => {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
+      console.log('Auth callback initiated');
       try {
+        if (isDemoMode()) {
+          // In demo mode, simulate successful authentication
+          console.log('Demo mode: Simulating successful authentication');
+          toast.success('Successfully signed in with demo account!');
+          const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
+          sessionStorage.removeItem('auth_return_to');
+          console.log('Redirecting to:', returnTo);
+          navigate(returnTo);
+          return;
+        }
+
+        if (!supabase) {
+          console.error('Supabase client not available');
+          toast.error('Authentication service not available');
+          navigate('/auth');
+          return;
+        }
+
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -21,13 +40,16 @@ export const AuthCallback: React.FC = () => {
         }
 
         if (data.session) {
+          console.log('Session obtained successfully:', data.session.user?.email);
           toast.success('Successfully signed in!');
           
           // Redirect to the intended page or dashboard
           const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
           sessionStorage.removeItem('auth_return_to');
+          console.log('Redirecting to:', returnTo);
           navigate(returnTo);
         } else {
+          console.log('No session found, redirecting to auth page');
           navigate('/auth');
         }
       } catch (error) {
@@ -54,3 +76,5 @@ export const AuthCallback: React.FC = () => {
     </div>
   );
 };
+
+export default AuthCallback;

@@ -15,7 +15,7 @@ let supabaseClient = null;
 
 try {
   if (isSupabaseConfigured) {
-    console.log('🔍 Initializing Supabase...');
+    console.log('🔍 Initializing Supabase with URL:', supabaseUrl);
     
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -36,11 +36,15 @@ try {
 export const supabase = supabaseClient;
 
 // Demo mode functions
-export const isDemoMode = () => !isSupabaseConfigured;
+let demoModeEnabled = !isSupabaseConfigured;
+
+export const isDemoMode = () => demoModeEnabled;
 export const enableDemoMode = () => {
+  demoModeEnabled = true;
   console.log('🔄 Demo mode enabled');
 };
 export const disableDemoMode = () => {
+  demoModeEnabled = false;
   console.log('🔄 Demo mode disabled');
 };
 

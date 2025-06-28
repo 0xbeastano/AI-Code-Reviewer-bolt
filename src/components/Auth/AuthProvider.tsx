@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthProvider initialized');
     // If in demo mode or Supabase client not available, set up demo state
     if (isDemoMode() || !supabase) {
       console.log('🔄 Running in demo mode - authentication disabled');
@@ -43,12 +44,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('Getting initial session');
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Error getting session:', error);
         } else {
+          console.log('Session retrieved:', session ? 'Valid session' : 'No session');
           setSession(session);
           setUser(session?.user ?? null);
+          if (session?.user) {
+            console.log('User authenticated:', session.user.email);
+          }
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
@@ -75,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    console.log('Sign in attempt for:', email);
     if (isDemoMode() || !supabase) {
       console.log('🔄 Demo mode: Sign in simulated');
       return { error: null };
@@ -85,7 +92,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
       });
-      return { error };
+      
+      if (error) {
+        console.error('Sign in error:', error);
+        return { error };
+      }
+      
+      console.log('Sign in successful');
+      return { error: undefined };
     } catch (error) {
       console.error('Sign in error:', error);
       return { error };
@@ -93,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string) => {
+    console.log('Sign up attempt for:', email);
     if (isDemoMode() || !supabase) {
       console.log('🔄 Demo mode: Sign up simulated');
       return { error: null };
@@ -103,7 +118,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
       });
-      return { error };
+      
+      if (error) {
+        console.error('Sign up error:', error);
+        return { error };
+      }
+      
+      console.log('Sign up successful');
+      return { error: undefined };
     } catch (error) {
       console.error('Sign up error:', error);
       return { error };
@@ -111,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('Sign out attempt');
     if (isDemoMode() || !supabase) {
       console.log('🔄 Demo mode: Sign out simulated');
       setUser(null);
@@ -122,6 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Sign out error:', error);
+      } else {
+        console.log('Sign out successful');
       }
     } catch (error) {
       console.error('Sign out error:', error);
@@ -129,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetPassword = async (email: string) => {
+    console.log('Password reset attempt for:', email);
     if (isDemoMode() || !supabase) {
       console.log('🔄 Demo mode: Password reset simulated');
       return { error: null };
@@ -138,7 +164,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
-      return { error };
+      
+      if (error) {
+        console.error('Reset password error:', error);
+        return { error };
+      }
+      
+      console.log('Password reset email sent');
+      return { error: undefined };
     } catch (error) {
       console.error('Reset password error:', error);
       return { error };
@@ -146,6 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithGitHub = async () => {
+    console.log('GitHub sign in attempt');
     if (isDemoMode() || !supabase) {
       console.log('🔄 Demo mode: GitHub sign in simulated');
       return { error: null };
@@ -161,11 +195,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
+        console.error('GitHub sign in failed:', error);
         toast.error(`GitHub sign in failed: ${error.message}`);
         return { error };
       }
       
       if (data.url) {
+        console.log('Redirecting to GitHub OAuth URL');
         window.location.href = data.url;
       }
       
@@ -178,6 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithGoogle = async () => {
+    console.log('Google sign in attempt');
     if (isDemoMode() || !supabase) {
       console.log('🔄 Demo mode: Google sign in simulated');
       return { error: null };
@@ -192,11 +229,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
+        console.error('Google sign in failed:', error);
         toast.error(`Google sign in failed: ${error.message}`);
         return { error };
       }
       
       if (data.url) {
+        console.log('Redirecting to Google OAuth URL');
         window.location.href = data.url;
       }
       

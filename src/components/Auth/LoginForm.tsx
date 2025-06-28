@@ -36,17 +36,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
   });
 
   const onSubmit = async (data: LoginForm) => {
+    console.log('Login form submitted with:', data);
     setIsLoading(true);
     try {
       const { error } = await signIn(data.email, data.password);
       
       if (error) {
+        console.error('Login error:', error);
         toast.error(error.message);
       } else {
+        console.log('Login successful, redirecting to dashboard');
         toast.success('Welcome back!');
         navigate('/dashboard');
       }
     } catch (error) {
+      console.error('Unexpected login error:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -56,16 +60,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
   const handleGitHubSignIn = async () => {
     setOauthLoading('github');
     try {
+      console.log('Starting GitHub sign in process');
       // Store current location for redirect after auth
       sessionStorage.setItem('auth_return_to', '/dashboard');
       
       const { error } = await signInWithGitHub();
       
       if (error) {
+        console.error('GitHub sign in error:', error);
         toast.error(error.message);
       }
       // Redirect is handled in the signInWithGitHub function
     } catch (error) {
+      console.error('Failed to sign in with GitHub:', error);
       toast.error('Failed to sign in with GitHub');
     } finally {
       setOauthLoading(null);
@@ -75,16 +82,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
   const handleGoogleSignIn = async () => {
     setOauthLoading('google');
     try {
+      console.log('Starting Google sign in process');
       // Store current location for redirect after auth
       sessionStorage.setItem('auth_return_to', '/dashboard');
       
       const { error } = await signInWithGoogle();
       
       if (error) {
+        console.error('Google sign in error:', error);
         toast.error(error.message);
       }
       // Redirect is handled in the signInWithGoogle function
     } catch (error) {
+      console.error('Failed to sign in with Google:', error);
       toast.error('Failed to sign in with Google');
     } finally {
       setOauthLoading(null);

@@ -47,11 +47,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const password = watch('password');
 
   const onSubmit = async (data: SignupForm) => {
+    console.log('Signup form submitted with:', data);
     setIsLoading(true);
     try {
       const { error } = await signUp(data.email, data.password);
       
       if (error) {
+        console.error('Signup error:', error);
         if (error.message.includes('verification link')) {
           setEmailSent(true);
           toast.success('Verification email sent! Please check your inbox.');
@@ -59,10 +61,12 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
           toast.error(error.message);
         }
       } else {
+        console.log('Signup successful, redirecting to dashboard');
         toast.success('Account created successfully!');
         navigate('/dashboard');
       }
     } catch (error) {
+      console.error('Unexpected signup error:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -72,16 +76,19 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const handleGitHubSignIn = async () => {
     setOauthLoading('github');
     try {
+      console.log('Starting GitHub sign up process');
       // Store current location for redirect after auth
       sessionStorage.setItem('auth_return_to', '/dashboard');
       
       const { error } = await signInWithGitHub();
       
       if (error) {
+        console.error('GitHub sign up error:', error);
         toast.error(error.message);
       }
       // Redirect is handled in the signInWithGitHub function
     } catch (error) {
+      console.error('Failed to sign up with GitHub:', error);
       toast.error('Failed to sign up with GitHub');
     } finally {
       setOauthLoading(null);
@@ -91,16 +98,19 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const handleGoogleSignIn = async () => {
     setOauthLoading('google');
     try {
+      console.log('Starting Google sign up process');
       // Store current location for redirect after auth
       sessionStorage.setItem('auth_return_to', '/dashboard');
       
       const { error } = await signInWithGoogle();
       
       if (error) {
+        console.error('Google sign up error:', error);
         toast.error(error.message);
       }
       // Redirect is handled in the signInWithGoogle function
     } catch (error) {
+      console.error('Failed to sign up with Google:', error);
       toast.error('Failed to sign up with Google');
     } finally {
       setOauthLoading(null);
