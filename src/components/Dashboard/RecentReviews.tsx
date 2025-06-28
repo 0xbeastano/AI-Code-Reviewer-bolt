@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Clock, CheckCircle, XCircle, AlertCircle, ExternalLink, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { FixedSizeList as List } from 'react-window';
+import { VariableSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
 interface CodeReviewResult {
@@ -69,6 +69,11 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
       default:
         return <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />;
     }
+  };
+
+  const getItemSize = (index: number) => {
+    const review = displayReviews[index];
+    return review.status === 'running' ? 140 : 100;
   };
 
   const ReviewRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
@@ -214,7 +219,7 @@ const RecentReviews: React.FC<RecentReviewsProps> = ({ reviews = [] }) => {
                 height={height}
                 width={width}
                 itemCount={displayReviews.length}
-                itemSize={review => review.status === 'running' ? 140 : 100}
+                itemSize={getItemSize}
                 itemData={displayReviews}
               >
                 {ReviewRow}

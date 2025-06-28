@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
   // Fetch repositories for QuickActions
   const { data: repositories } = useQuery(
     'repositories',
-    codeReviewService.getRepositories,
+    () => codeReviewService.getRepositories(),
     {
       refetchOnWindowFocus: false,
       staleTime: 10 * 60 * 1000, // 10 minutes
