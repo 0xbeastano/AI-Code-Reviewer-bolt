@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, Github, Chrome, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Github, Chrome, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +25,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
+  const [showCredentialsHelp, setShowCredentialsHelp] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -38,12 +39,26 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
   const onSubmit = async (data: LoginForm) => {
     console.log('Login form submitted with:', data);
     setIsLoading(true);
+    setShowCredentialsHelp(false);
+    
     try {
       const { error } = await signIn(data.email, data.password);
       
       if (error) {
         console.error('Login error:', error);
-        toast.error(error.message);
+        
+        // Handle specific error cases
+        if (error.message?.includes('Invalid login credentials') || 
+            error.message?.includes('invalid_credentials')) {
+          setShowCredentialsHelp(true);
+          toast.error('Invalid email or password. Please check your credentials or sign up for a new account.');
+        } else if (error.message?.includes('Email not confirmed')) {
+          toast.error('Please check your email and click the confirmation link before signing in.');
+        } else if (error.message?.includes('Too many requests')) {
+          toast.error('Too many login attempts. Please wait a moment before trying again.');
+        } else {
+          toast.error(error.message || 'Failed to sign in. Please try again.');
+        }
       } else {
         console.log('Login successful, redirecting to dashboard');
         toast.success('Welcome back!');
@@ -51,7 +66,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
       }
     } catch (error) {
       console.error('Unexpected login error:', error);
-      toast.error('An unexpected error occurred');
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -101,6 +116,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
     }
   };
 
+  const handleDemoLogin = () => {
+    console.log('Demo login attempted');
+    toast.success('Demo mode activated! Redirecting to dashboard...');
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 1000);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -114,6 +137,44 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             Sign in to your AI Code Reviewer account
+          </p>
+        </div>
+
+        {/* Credentials Help Banner */}
+        {showCredentialsHelp && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+          >
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 mr-3 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="text-amber-800 dark:text-amber-200 font-medium mb-2">
+                  Can't sign in?
+                </p>
+                <ul className="text-amber-700 dark:text-amber-300 space-y-1">
+                  <li>• Double-check your email and password for typos</li>
+                  <li>• If you don't have an account, <button onClick={onSwitchToSignup} className="underline font-medium">sign up here</button></li>
+                  <li>• Try <button onClick={onSwitchToReset} className="underline font-medium">resetting your password</button></li>
+                  <li>• Or <button onClick={handleDemoLogin} className="underline font-medium">try the demo</button></li>
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Demo Mode Button */}
+        <div className="mb-6">
+          <button
+            onClick={handleDemoLogin}
+            className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
+          >
+            <span className="mr-2">🚀</span>
+            Try Demo Mode
+          </button>
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+            Explore the app without creating an account
           </p>
         </div>
 
