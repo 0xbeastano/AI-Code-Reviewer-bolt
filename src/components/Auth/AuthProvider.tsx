@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -98,8 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
       
-      console.log('Sign in successful');
-      return { error: undefined };
+      console.log('Sign in successful:', data.user?.email);
+      return { error: null };
     } catch (error) {
       console.error('Sign in error:', error);
       return { error };
@@ -114,9 +114,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        }
       });
       
       if (error) {
@@ -124,8 +127,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
       
-      console.log('Sign up successful');
-      return { error: undefined };
+      console.log('Sign up successful:', data.user?.email);
+      return { error: null };
     } catch (error) {
       console.error('Sign up error:', error);
       return { error };
@@ -171,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('Password reset email sent');
-      return { error: undefined };
+      return { error: null };
     } catch (error) {
       console.error('Reset password error:', error);
       return { error };

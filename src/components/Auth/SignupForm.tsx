@@ -54,7 +54,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       
       if (error) {
         console.error('Signup error:', error);
-        if (error.message.includes('verification link')) {
+        if (error.message && error.message.includes('verification link')) {
           setEmailSent(true);
           toast.success('Verification email sent! Please check your inbox.');
         } else {
