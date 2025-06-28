@@ -1,5 +1,5 @@
 import React from 'react';
-import { Code2, Moon, Sun, Brain, Sparkles } from 'lucide-react';
+import { Code2, Moon, Sun, Brain, Sparkles, GitPullRequest } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -13,6 +13,7 @@ const Header: React.FC = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Code Review', href: '/review' },
+    { name: 'Pull Requests', href: '/pull-request/demo-user/demo-repo-1' },
     { name: 'Analytics', href: '/analytics' },
     { name: 'Settings', href: '/settings' },
   ];
