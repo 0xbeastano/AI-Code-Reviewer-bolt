@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, Github, Chrome, Loader2, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Github, Chrome, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +33,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
   const [emailSent, setEmailSent] = useState(false);
+  const [showDatabaseError, setShowDatabaseError] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -49,16 +50,28 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const onSubmit = async (data: SignupForm) => {
     console.log('Signup form submitted with:', data);
     setIsLoading(true);
+    setShowDatabaseError(false);
+    
     try {
       const { error } = await signUp(data.email, data.password);
       
       if (error) {
         console.error('Signup error:', error);
-        if (error.message && error.message.includes('verification link')) {
+        
+        // Check for specific database error
+        if (error.message && (
+          error.message.includes('Database error saving new user') ||
+          error.message.includes('unexpected_failure') ||
+          error.message.includes('500')
+        )) {
+          console.error('Database configuration error detected');
+          setShowDatabaseError(true);
+          toast.error('Database configuration issue detected. Please try OAuth sign-up or contact support.');
+        } else if (error.message && error.message.includes('verification link')) {
           setEmailSent(true);
           toast.success('Verification email sent! Please check your inbox.');
         } else {
-          toast.error(error.message);
+          toast.error(error.message || 'Failed to create account');
         }
       } else {
         console.log('Signup successful, redirecting to dashboard');
@@ -67,7 +80,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       }
     } catch (error) {
       console.error('Unexpected signup error:', error);
-      toast.error('An unexpected error occurred');
+      setShowDatabaseError(true);
+      toast.error('An unexpected error occurred. Please try OAuth sign-up or contact support.');
     } finally {
       setIsLoading(false);
     }
@@ -180,6 +194,26 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
             Join AI Code Reviewer and start improving your code
           </p>
         </div>
+
+        {/* Database Error Warning */}
+        {showDatabaseError && (
+          <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                  Database Configuration Issue
+                </h3>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
+                  There's a temporary issue with email/password signup. Please try signing up with GitHub or Google instead.
+                </p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                  If you prefer email signup, please contact support for assistance.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* OAuth Buttons */}
         <div className="space-y-3 mb-6">
@@ -352,7 +386,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
 
           <motion.button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || showDatabaseError}
             className="w-full flex items-center justify-center px-4 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
             whileHover={{ scale: isLoading ? 1 : 1.02 }}
             whileTap={{ scale: isLoading ? 1 : 0.98 }}
@@ -360,7 +394,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin mr-2" />
             ) : null}
-            {isLoading ? 'Creating Account...' : 'Create Account'}
+            {isLoading ? 'Creating Account...' : showDatabaseError ? 'Use OAuth Above' : 'Create Account'}
           </motion.button>
         </form>
 

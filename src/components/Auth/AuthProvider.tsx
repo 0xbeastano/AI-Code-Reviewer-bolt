@@ -124,6 +124,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Sign up error:', error);
+        
+        // Enhanced error handling for database issues
+        if (error.message && (
+          error.message.includes('Database error saving new user') ||
+          error.message.includes('unexpected_failure') ||
+          error.status === 500
+        )) {
+          console.error('Database configuration error detected in AuthProvider');
+          return { 
+            error: {
+              ...error,
+              message: 'Database error saving new user',
+              isDatabaseError: true
+            }
+          };
+        }
+        
         return { error };
       }
       
@@ -131,7 +148,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: null };
     } catch (error) {
       console.error('Sign up error:', error);
-      return { error };
+      return { 
+        error: {
+          message: 'An unexpected error occurred during signup',
+          isDatabaseError: true
+        }
+      };
     }
   };
 
