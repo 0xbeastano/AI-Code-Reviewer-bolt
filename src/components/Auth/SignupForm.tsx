@@ -68,6 +68,15 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
           return;
         }
         
+        // Check for invalid credentials error (existing unconfirmed account)
+        if (error.message && error.message.includes('Invalid login credentials')) {
+          toast.error('An account with this email might already exist but is unconfirmed. Please check your email for a verification link or try logging in.');
+          setTimeout(() => {
+            onSwitchToLogin();
+          }, 3000);
+          return;
+        }
+        
         // Check for specific database error
         if (error.message && (
           error.message.includes('Database error saving new user') ||
