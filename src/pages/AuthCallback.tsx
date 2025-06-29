@@ -41,6 +41,9 @@ const AuthCallback: React.FC = () => {
 
         if (data.session) {
           console.log('Session obtained successfully:', data.session.user?.email);
+          console.log('User metadata:', data.session.user?.user_metadata);
+          console.log('App metadata:', data.session.user?.app_metadata);
+          
           toast.success('Successfully signed in!');
           
           // Redirect to the intended page or dashboard

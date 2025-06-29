@@ -43,15 +43,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (requireAuth && !user) {
     console.log('Access denied: Authentication required. Redirecting to /auth');
-    // Redirect to auth page with return URL
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    // Save the current location to redirect back after login
+    sessionStorage.setItem('auth_return_to', location.pathname);
+    // Redirect to auth page
+    return <Navigate to="/auth" replace />;
   }
 
   if (!requireAuth && user) {
     console.log('User already authenticated. Redirecting to dashboard');
     // Redirect authenticated users away from auth pages
-    const from = location.state?.from?.pathname || '/dashboard';
-    return <Navigate to={from} replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

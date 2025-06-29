@@ -61,7 +61,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
       } else {
         console.log('Login successful, redirecting to dashboard');
         toast.success('Welcome back!');
-        // Redirection will be handled by ProtectedRoute
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Unexpected login error:', error);

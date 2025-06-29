@@ -84,7 +84,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
         )) {
           console.error('Database configuration error detected');
           setShowDatabaseError(true);
-          toast.error('Database configuration issue detected. Please try again or contact support.');
+          toast.error('Database configuration issue detected. Please try again later or contact support for assistance.');
         } else if (error.message && error.message.includes('verification link')) {
           setEmailSent(true);
           toast.success('Verification email sent! Please check your inbox.');
@@ -99,7 +99,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     } catch (error) {
       console.error('Unexpected signup error:', error);
       setShowDatabaseError(true);
-      toast.error('An unexpected error occurred. Please try again or contact support.');
+      toast.error('An unexpected error occurred. Please try again later or contact support.');
     } finally {
       setIsLoading(false);
     }
