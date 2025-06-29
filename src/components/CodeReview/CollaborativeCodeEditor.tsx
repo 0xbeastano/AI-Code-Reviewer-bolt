@@ -15,6 +15,12 @@ interface CollaborativeCodeEditorProps {
   title?: string;
 }
 
+// Define cursor position type outside the component
+interface CursorPosition {
+  left: number;
+  top: number;
+}
+
 const CollaborativeCodeEditor: React.FC<CollaborativeCodeEditorProps> = ({
   value,
   language,
@@ -112,7 +118,7 @@ const CollaborativeCodeEditor: React.FC<CollaborativeCodeEditorProps> = ({
   };
 
   // Calculate positions for comment widgets
-  const getCommentPosition = (line: number) => {
+  const getCommentPosition = (line: number): { top: number } => {
     if (!editorRef.current) return { top: 0 };
     
     const lineTop = line * lineHeight;
