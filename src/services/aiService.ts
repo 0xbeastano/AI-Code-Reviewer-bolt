@@ -24,7 +24,10 @@ export class AIService {
   private initializeOpenAI() {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (apiKey) {
-      this.openai = new OpenAI({ apiKey });
+      this.openai = new OpenAI({ 
+        apiKey,
+        dangerouslyAllowBrowser: true
+      });
     }
   }
 
