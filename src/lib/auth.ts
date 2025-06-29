@@ -5,14 +5,14 @@ import { supabase, isDemoMode, disableDemoMode } from './supabase';
 // GitHub OAuth configuration
 export const githubOAuthConfig = {
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
-  redirectUri: `${import.meta.env.VITE_APP_URL || 'https://ai-code-reviewerz.netlify.app'}/auth/callback`,
+  redirectUri: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
   scopes: ['repo', 'user:email', 'read:user']
 };
 
 // Google OAuth configuration
 export const googleOAuthConfig = {
   clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-  redirectUri: `${import.meta.env.VITE_APP_URL || 'https://ai-code-reviewerz.netlify.app'}/auth/callback`,
+  redirectUri: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
   scopes: ['openid', 'email', 'profile']
 };
 
@@ -121,10 +121,26 @@ export class AuthService {
 
   // Session Management
   async signOut(): Promise<void> {
-    if (supabase) {
-      await supabase.auth.signOut();
+    if (isDemoMode()) {
+      console.log('🔄 Demo mode: Sign out simulated');
+      this.session = null;
+      return;
     }
-    this.session = null;
+
+    if (!supabase) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Sign out error:', error);
+      } else {
+        console.log('Sign out successful');
+      }
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   }
 
   async refreshSession(): Promise<{ session: AuthSession | null; error: string | null }> {
@@ -399,6 +415,9 @@ export class AuthService {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
+        }
       });
       
       if (error) {
@@ -424,7 +443,7 @@ export class AuthService {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/reset-password',
+        redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/reset-password`,
       });
       
       if (error) {
@@ -453,7 +472,7 @@ export class AuthService {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/callback',
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
           scopes: 'repo user:email read:user'
         },
       });
@@ -465,10 +484,10 @@ export class AuthService {
       
       if (data.url) {
         console.log('Redirecting to GitHub OAuth URL:', data.url);
-        return { url: data.url, error: undefined };
+        window.location.href = data.url;
       }
       
-      return { error: { message: 'No redirect URL returned from Supabase' } };
+      return { url: data.url, error: undefined };
     } catch (error) {
       console.error('GitHub sign in error:', error);
       return { error: { message: 'An unexpected error occurred' } };
@@ -490,7 +509,7 @@ export class AuthService {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/callback',
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
         },
       });
       

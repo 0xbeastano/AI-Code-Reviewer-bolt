@@ -17,10 +17,3 @@
   port = 5173
   targetPort = 5173
   framework = "vite"
-
-# Environment variables for the Netlify deployment
-[template.environment]
-  VITE_SUPABASE_URL = "Your Supabase URL"
-  VITE_SUPABASE_ANON_KEY = "Your Supabase Anon Key"
-  VITE_GITHUB_CLIENT_ID = "Your GitHub Client ID"
-  VITE_APP_URL = "https://ai-code-reviewerz.netlify.app"

@@ -4,8 +4,13 @@ import { Github, CheckCircle, XCircle, RefreshCw, ExternalLink } from 'lucide-re
 import { useAuth } from '../Auth/AuthProvider';
 import { authService } from '../../lib/auth';
 import toast from 'react-hot-toast';
+import { supabase, isDemoMode } from '../../lib/supabase';
 
-const GitHubAuthTest: React.FC = () => {
+interface GitHubAuthTestProps {
+  // Props can be added here if needed
+}
+
+const GitHubAuthTest: React.FC<GitHubAuthTestProps> = () => {
   const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [repositories, setRepositories] = useState<any[]>([]);
@@ -279,8 +284,3 @@ const GitHubAuthTest: React.FC = () => {
 };
 
 export default GitHubAuthTest;
-
-// Helper function to check if demo mode is enabled
-function isDemoMode(): boolean {
-  return typeof window !== 'undefined' && window.location.search.includes('demo=true');
-}

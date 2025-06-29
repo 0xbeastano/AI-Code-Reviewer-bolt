@@ -121,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
         }
       });
       
@@ -134,11 +134,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error.message.includes('unexpected_failure') ||
           error.status === 500
         )) {
-          console.error('Database configuration error detected in AuthProvider');
+          console.error('Authentication error detected in AuthProvider');
           return { 
             error: {
               ...error,
-              message: 'Database error saving new user',
+              message: 'Account creation failed. Please try again or use another sign-up method.',
               isDatabaseError: true
             }
           };
@@ -190,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/reset-password',
+        redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/reset-password`,
       });
       
       if (error) {
@@ -217,7 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/callback',
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
           scopes: 'repo user:email read:user'
         },
       });
@@ -252,7 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/callback',
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
         },
       });
       
