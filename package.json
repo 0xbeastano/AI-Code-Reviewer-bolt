@@ -39,6 +39,7 @@
     "lodash-es": "^4.17.21",
     "lucide-react": "^0.344.0",
     "monaco-editor": "^0.44.0",
+    "nanoid": "^5.0.4",
     "openai": "^4.28.0",
     "prismjs": "^1.29.0",
     "react": "^18.3.1",
