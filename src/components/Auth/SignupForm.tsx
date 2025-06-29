@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, Github, Chrome, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -27,11 +27,10 @@ interface SignupFormProps {
 }
 
 export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
-  const { signUp, signInWithGitHub, signInWithGoogle } = useAuth();
+  const { signUp } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [showDatabaseError, setShowDatabaseError] = useState(false);
   const navigate = useNavigate();
@@ -85,7 +84,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
         )) {
           console.error('Database configuration error detected');
           setShowDatabaseError(true);
-          toast.error('Database configuration issue detected. Please try OAuth sign-up or contact support.');
+          toast.error('Database configuration issue detected. Please try again or contact support.');
         } else if (error.message && error.message.includes('verification link')) {
           setEmailSent(true);
           toast.success('Verification email sent! Please check your inbox.');
@@ -100,53 +99,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     } catch (error) {
       console.error('Unexpected signup error:', error);
       setShowDatabaseError(true);
-      toast.error('An unexpected error occurred. Please try OAuth sign-up or contact support.');
+      toast.error('An unexpected error occurred. Please try again or contact support.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleGitHubSignIn = async () => {
-    setOauthLoading('github');
-    try {
-      console.log('Starting GitHub sign up process');
-      // Store current location for redirect after auth
-      sessionStorage.setItem('auth_return_to', '/dashboard');
-      
-      const { error } = await signInWithGitHub();
-      
-      if (error) {
-        console.error('GitHub sign up error:', error);
-        toast.error(error.message);
-      }
-      // Redirect is handled in the signInWithGitHub function
-    } catch (error) {
-      console.error('Failed to sign up with GitHub:', error);
-      toast.error('Failed to sign up with GitHub');
-    } finally {
-      setOauthLoading(null);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setOauthLoading('google');
-    try {
-      console.log('Starting Google sign up process');
-      // Store current location for redirect after auth
-      sessionStorage.setItem('auth_return_to', '/dashboard');
-      
-      const { error } = await signInWithGoogle();
-      
-      if (error) {
-        console.error('Google sign up error:', error);
-        toast.error(error.message);
-      }
-      // Redirect is handled in the signInWithGoogle function
-    } catch (error) {
-      console.error('Failed to sign up with Google:', error);
-      toast.error('Failed to sign up with Google');
-    } finally {
-      setOauthLoading(null);
     }
   };
 
@@ -224,55 +179,12 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
                   Database Configuration Issue
                 </h3>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
-                  There's a temporary issue with email/password signup. Please try signing up with GitHub or Google instead.
-                </p>
-                <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                  If you prefer email signup, please contact support for assistance.
+                  There's a temporary issue with email/password signup. Please try again later or contact support for assistance.
                 </p>
               </div>
             </div>
           </div>
         )}
-
-        {/* OAuth Buttons */}
-        <div className="space-y-3 mb-6">
-          <button
-            onClick={handleGitHubSignIn}
-            disabled={oauthLoading !== null}
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {oauthLoading === 'github' ? (
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : (
-              <Github className="w-5 h-5 mr-2" />
-            )}
-            Continue with GitHub
-          </button>
-
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={oauthLoading !== null}
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {oauthLoading === 'google' ? (
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : (
-              <Chrome className="w-5 h-5 mr-2" />
-            )}
-            Continue with Google
-          </button>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-              Or create account with email
-            </span>
-          </div>
-        </div>
 
         {/* Email/Password Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -413,7 +325,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin mr-2" />
             ) : null}
-            {isLoading ? 'Creating Account...' : showDatabaseError ? 'Use OAuth Above' : 'Create Account'}
+            {isLoading ? 'Creating Account...' : 'Create Account'}
           </motion.button>
         </form>
 

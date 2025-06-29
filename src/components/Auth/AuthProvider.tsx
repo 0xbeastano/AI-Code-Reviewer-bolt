@@ -11,8 +11,6 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
-  signInWithGitHub: () => Promise<{ error: any; url?: string }>;
-  signInWithGoogle: () => Promise<{ error: any; url?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,7 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('User authenticated:', session.user.email);
             console.log('User metadata:', session.user.user_metadata);
             console.log('App metadata:', session.user.app_metadata);
-            console.log('Provider token:', session.provider_token ? 'Available' : 'Not available');
           }
         }
       } catch (error) {
@@ -121,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          emailRedirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       });
       
@@ -134,11 +131,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error.message.includes('unexpected_failure') ||
           error.status === 500
         )) {
-          console.error('Authentication error detected in AuthProvider');
+          console.error('Database configuration error detected in AuthProvider');
           return { 
             error: {
               ...error,
-              message: 'Account creation failed. Please try again or use another sign-up method.',
+              message: 'Account creation failed. Please try again later.',
               isDatabaseError: true
             }
           };
@@ -190,7 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
       
       if (error) {
@@ -206,75 +203,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithGitHub = async () => {
-    console.log('GitHub sign in attempt');
-    if (isDemoMode() || !supabase) {
-      console.log('🔄 Demo mode: GitHub sign in simulated');
-      return { error: null };
-    }
-
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
-          scopes: 'repo user:email read:user'
-        },
-      });
-      
-      if (error) {
-        console.error('GitHub sign in failed:', error);
-        toast.error(`GitHub sign in failed: ${error.message}`);
-        return { error };
-      }
-      
-      if (data.url) {
-        console.log('Redirecting to GitHub OAuth URL:', data.url);
-        window.location.href = data.url;
-      }
-      
-      return { url: data.url, error: null };
-    } catch (error) {
-      console.error('GitHub sign in error:', error);
-      toast.error('Failed to sign in with GitHub');
-      return { error };
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    console.log('Google sign in attempt');
-    if (isDemoMode() || !supabase) {
-      console.log('🔄 Demo mode: Google sign in simulated');
-      return { error: null };
-    }
-
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
-        },
-      });
-      
-      if (error) {
-        console.error('Google sign in failed:', error);
-        toast.error(`Google sign in failed: ${error.message}`);
-        return { error };
-      }
-      
-      if (data.url) {
-        console.log('Redirecting to Google OAuth URL:', data.url);
-        window.location.href = data.url;
-      }
-      
-      return { url: data.url, error: null };
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      toast.error('Failed to sign in with Google');
-      return { error };
-    }
-  };
-
   const value = {
     user,
     session,
@@ -282,9 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
     signOut,
-    resetPassword,
-    signInWithGitHub,
-    signInWithGoogle
+    resetPassword
   };
 
   return (

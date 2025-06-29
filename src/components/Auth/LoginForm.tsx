@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, Github, Chrome, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -21,10 +21,9 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitchToReset }) => {
-  const { signIn, signInWithGitHub, signInWithGoogle } = useAuth();
+  const { signIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
   const [showCredentialsHelp, setShowCredentialsHelp] = useState(false);
   const navigate = useNavigate();
 
@@ -62,57 +61,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
       } else {
         console.log('Login successful, redirecting to dashboard');
         toast.success('Welcome back!');
-        // Removed the navigate('/dashboard') line - ProtectedRoute will handle redirection
+        // Redirection will be handled by ProtectedRoute
       }
     } catch (error) {
       console.error('Unexpected login error:', error);
       toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleGitHubSignIn = async () => {
-    setOauthLoading('github');
-    try {
-      console.log('Starting GitHub sign in process');
-      // Store current location for redirect after auth
-      sessionStorage.setItem('auth_return_to', '/dashboard');
-      
-      const { error } = await signInWithGitHub();
-      
-      if (error) {
-        console.error('GitHub sign in error:', error);
-        toast.error(error.message);
-      }
-      // Redirect is handled in the signInWithGitHub function
-    } catch (error) {
-      console.error('Failed to sign in with GitHub:', error);
-      toast.error('Failed to sign in with GitHub');
-    } finally {
-      setOauthLoading(null);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setOauthLoading('google');
-    try {
-      console.log('Starting Google sign in process');
-      // Store current location for redirect after auth
-      sessionStorage.setItem('auth_return_to', '/dashboard');
-      
-      const { error } = await signInWithGoogle();
-      
-      if (error) {
-        console.error('Google sign in error:', error);
-        toast.error(error.message);
-      }
-      // Redirect is handled in the signInWithGoogle function
-    } catch (error) {
-      console.error('Failed to sign in with Google:', error);
-      toast.error('Failed to sign in with Google');
-    } finally {
-      setOauthLoading(null);
     }
   };
 
@@ -176,46 +131,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
             Explore the app without creating an account
           </p>
-        </div>
-
-        {/* OAuth Buttons */}
-        <div className="space-y-3 mb-6">
-          <button
-            onClick={handleGitHubSignIn}
-            disabled={oauthLoading !== null}
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {oauthLoading === 'github' ? (
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : (
-              <Github className="w-5 h-5 mr-2" />
-            )}
-            Continue with GitHub
-          </button>
-
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={oauthLoading !== null}
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {oauthLoading === 'google' ? (
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : (
-              <Chrome className="w-5 h-5 mr-2" />
-            )}
-            Continue with Google
-          </button>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-              Or continue with email
-            </span>
-          </div>
         </div>
 
         {/* Email/Password Form */}
