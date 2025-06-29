@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { User, Mail, Building, Save, Upload, Camera } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -17,7 +16,6 @@ const profileSchema = z.object({
 type ProfileForm = z.infer<typeof profileSchema>;
 
 const ProfileSettings: React.FC = () => {
-  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
@@ -28,9 +26,9 @@ const ProfileSettings: React.FC = () => {
   } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      organization: user?.organization || '',
+      name: 'Demo User',
+      email: 'demo@example.com',
+      organization: 'AI Code Review',
       bio: '',
     }
   });
@@ -75,14 +73,12 @@ const ProfileSettings: React.FC = () => {
         <div className="flex items-center space-x-6">
           <div className="relative">
             <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
-              {avatarPreview || user?.avatar ? (
+              {avatarPreview || (
                 <img
-                  src={avatarPreview || user?.avatar}
+                  src="https://ui-avatars.com/api/?name=Demo+User&background=random"
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
-              ) : (
-                <User className="w-8 h-8 text-gray-400" />
               )}
             </div>
             <label
@@ -199,7 +195,7 @@ const ProfileSettings: React.FC = () => {
               </label>
               <div className="px-3 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
                 <span className="text-gray-900 dark:text-white capitalize">
-                  {user?.role || 'Developer'}
+                  Developer
                 </span>
               </div>
             </div>
@@ -209,7 +205,7 @@ const ProfileSettings: React.FC = () => {
               </label>
               <div className="px-3 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
                 <span className="text-gray-900 dark:text-white">
-                  {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                  {new Date().toLocaleDateString()}
                 </span>
               </div>
             </div>

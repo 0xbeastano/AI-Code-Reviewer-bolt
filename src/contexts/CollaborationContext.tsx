@@ -3,7 +3,6 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import { MonacoBinding } from 'y-monaco';
-import { useAuth } from '../components/Auth/AuthProvider';
 import { nanoid } from 'nanoid';
 import toast from 'react-hot-toast';
 
@@ -73,7 +72,6 @@ interface CollaborationProviderProps {
 }
 
 export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ children }) => {
-  const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [isCollaborating, setIsCollaborating] = useState(false);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -110,11 +108,6 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
   }, [wsProvider, dbProvider, yDoc]);
 
   const startCollaboration = useCallback(async (fileId: string) => {
-    if (!user) {
-      toast.error('You must be logged in to collaborate');
-      return;
-    }
-
     try {
       // Create a unique session ID for this collaboration
       const sessionId = `code-review-${fileId}`;
@@ -150,9 +143,9 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
       // Set local user state
       awareness.setLocalState({
         user: {
-          id: user.id,
-          name: user.name || user.email,
-          avatar: user.avatar,
+          id: 'demo-user',
+          name: 'Demo User',
+          avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=random',
           color: getUserColor()
         }
       });
@@ -187,7 +180,7 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
       console.error('Failed to start collaboration:', error);
       toast.error('Failed to start collaboration session');
     }
-  }, [user, getUserColor]);
+  }, [getUserColor]);
 
   const stopCollaboration = useCallback(() => {
     if (wsProvider) {
@@ -245,17 +238,15 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
   }, [yDoc, wsProvider]);
 
   const addComment = useCallback((fileId: string, line: number, content: string) => {
-    if (!user) return;
-    
     const newComment: Comment = {
       id: nanoid(),
       fileId,
       line,
       content,
       author: {
-        id: user.id,
-        name: user.name || user.email,
-        avatar: user.avatar
+        id: 'demo-user',
+        name: 'Demo User',
+        avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=random'
       },
       createdAt: new Date(),
       resolved: false
@@ -266,23 +257,21 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
     // In a real implementation, this would be saved to the database
     
     return newComment;
-  }, [user]);
+  }, []);
 
   const getComments = useCallback((fileId: string) => {
     return comments.filter(comment => comment.fileId === fileId);
   }, [comments]);
 
   const resolveComment = useCallback((commentId: string) => {
-    if (!user) return;
-    
     setComments(prev => prev.map(comment => 
       comment.id === commentId
         ? {
             ...comment,
             resolved: true,
             resolvedBy: {
-              id: user.id,
-              name: user.name || user.email
+              id: 'demo-user',
+              name: 'Demo User'
             },
             resolvedAt: new Date()
           }
@@ -290,7 +279,7 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
     ));
     
     // In a real implementation, this would be saved to the database
-  }, [user]);
+  }, []);
 
   return (
     <CollaborationContext.Provider
