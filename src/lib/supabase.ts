@@ -35,8 +35,8 @@ try {
 // Export the client
 export const supabase = supabaseClient;
 
-// Demo mode functions
-let demoModeEnabled = !isSupabaseConfigured;
+// Demo mode functions - always enabled for direct dashboard access
+let demoModeEnabled = true;
 
 export const isDemoMode = () => demoModeEnabled;
 export const enableDemoMode = () => {
@@ -44,8 +44,9 @@ export const enableDemoMode = () => {
   console.log('🔄 Demo mode enabled');
 };
 export const disableDemoMode = () => {
-  demoModeEnabled = false;
-  console.log('🔄 Demo mode disabled');
+  // For direct dashboard access, we keep demo mode enabled
+  demoModeEnabled = true;
+  console.log('🔄 Demo mode remains enabled for direct dashboard access');
 };
 
 // Database types

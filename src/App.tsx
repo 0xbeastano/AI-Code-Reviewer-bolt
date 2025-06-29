@@ -6,16 +6,12 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { CodebaseProvider } from './contexts/CodebaseContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import { CollaborationProvider } from './contexts/CollaborationContext';
-import { AuthProvider } from './components/Auth/AuthProvider';
-import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import CodeReview from './pages/CodeReview';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import TestDashboard from './pages/TestDashboard';
-import { AuthPage } from './components/Auth/AuthPage';
-import AuthCallback from './pages/AuthCallback';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
 import PricingPage from './pages/PricingPage';
@@ -23,7 +19,6 @@ import DocumentationPage from './pages/DocumentationPage';
 import ReviewResults from './pages/ReviewResults';
 import DeployPage from './pages/DeployPage';
 import PullRequestReview from './pages/PullRequestReview';
-import { ResetPasswordConfirm } from './components/Auth/ResetPasswordConfirm';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -41,109 +36,76 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <AuthProvider>
-            <CodebaseProvider>
-              <WebSocketProvider>
-                <CollaborationProvider>
-                  <Router>
-                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                      <Routes>
-                        {/* Public Routes */}
-                        <Route path="/" element={<LandingPage />} />
-                        <Route path="/pricing" element={<PricingPage />} />
-                        <Route path="/docs" element={<DocumentationPage />} />
-                        <Route 
-                          path="/auth" 
-                          element={
-                            <ProtectedRoute requireAuth={false}>
-                              <AuthPage />
-                            </ProtectedRoute>
-                          } 
-                        />
-                        <Route path="/auth/callback" element={<AuthCallback />} />
-                        <Route 
-                          path="/auth/reset-password" 
-                          element={
-                            <ProtectedRoute requireAuth={false}>
-                              <ResetPasswordConfirm />
-                            </ProtectedRoute>
-                          } 
-                        />
-                        
-                        {/* Test Dashboard - Public for testing */}
-                        <Route path="/test" element={<TestDashboard />} />
-                        
-                        {/* Protected Routes */}
-                        <Route path="/dashboard" element={
-                          <ProtectedRoute>
-                            <Layout>
-                              <Dashboard />
-                            </Layout>
-                          </ProtectedRoute>
-                        } />
-                        <Route path="/review" element={
-                          <ProtectedRoute>
-                            <Layout>
-                              <CodeReview />
-                            </Layout>
-                          </ProtectedRoute>
-                        } />
-                        <Route path="/review/:id/results" element={
-                          <ProtectedRoute>
-                            <Layout>
-                              <ReviewResults />
-                            </Layout>
-                          </ProtectedRoute>
-                        } />
-                        <Route path="/analytics" element={
-                          <ProtectedRoute>
-                            <Layout>
-                              <Analytics />
-                            </Layout>
-                          </ProtectedRoute>
-                        } />
-                        <Route path="/settings" element={
-                          <ProtectedRoute>
-                            <Layout>
-                              <Settings />
-                            </Layout>
-                          </ProtectedRoute>
-                        } />
-                        <Route path="/deploy" element={
-                          <ProtectedRoute>
-                            <Layout>
-                              <DeployPage />
-                            </Layout>
-                          </ProtectedRoute>
-                        } />
-                        {/* Pull Request Review Route */}
-                        <Route path="/pull-request/:owner/:repo" element={
-                          <ProtectedRoute>
-                            <Layout>
-                              <PullRequestReview />
-                            </Layout>
-                          </ProtectedRoute>
-                        } />
-                        
-                        {/* Fallback - Redirect to landing page */}
-                        <Route path="*" element={<LandingPage />} />
-                      </Routes>
-                      <Toaster 
-                        position="top-right"
-                        toastOptions={{
-                          duration: 4000,
-                          style: {
-                            background: 'var(--toast-bg)',
-                            color: 'var(--toast-color)',
-                          },
-                        }}
-                      />
-                    </div>
-                  </Router>
-                </CollaborationProvider>
-              </WebSocketProvider>
-            </CodebaseProvider>
-          </AuthProvider>
+          <CodebaseProvider>
+            <WebSocketProvider>
+              <CollaborationProvider>
+                <Router>
+                  <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/pricing" element={<PricingPage />} />
+                      <Route path="/docs" element={<DocumentationPage />} />
+                      
+                      {/* Test Dashboard - Public for testing */}
+                      <Route path="/test" element={<TestDashboard />} />
+                      
+                      {/* Main Application Routes */}
+                      <Route path="/dashboard" element={
+                        <Layout>
+                          <Dashboard />
+                        </Layout>
+                      } />
+                      <Route path="/review" element={
+                        <Layout>
+                          <CodeReview />
+                        </Layout>
+                      } />
+                      <Route path="/review/:id/results" element={
+                        <Layout>
+                          <ReviewResults />
+                        </Layout>
+                      } />
+                      <Route path="/analytics" element={
+                        <Layout>
+                          <Analytics />
+                        </Layout>
+                      } />
+                      <Route path="/settings" element={
+                        <Layout>
+                          <Settings />
+                        </Layout>
+                      } />
+                      <Route path="/deploy" element={
+                        <Layout>
+                          <DeployPage />
+                        </Layout>
+                      } />
+                      {/* Pull Request Review Route */}
+                      <Route path="/pull-request/:owner/:repo" element={
+                        <Layout>
+                          <PullRequestReview />
+                        </Layout>
+                      } />
+                      
+                      {/* Fallback - Redirect to dashboard */}
+                      <Route path="*" element={<Dashboard />} />
+                    </Routes>
+                    <Toaster 
+                      position="top-right"
+                      toastOptions={{
+                        duration: 4000,
+                        style: {
+                          background: 'var(--toast-bg)',
+                          color: 'var(--toast-color)',
+                        },
+                      }}
+                    />
+                  </div>
+                </Router>
+              </CollaborationProvider>
+            </WebSocketProvider>
+          </CodebaseProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
