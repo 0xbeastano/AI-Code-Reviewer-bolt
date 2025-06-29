@@ -121,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          emailRedirectTo: `https://ai-code-reviewerz.netlify.app/auth/callback`,
+          emailRedirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
         }
       });
       
@@ -190,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `https://ai-code-reviewerz.netlify.app/auth/reset-password`,
+        redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/reset-password`,
       });
       
       if (error) {
@@ -217,7 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `https://ai-code-reviewerz.netlify.app/auth/callback`,
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
           scopes: 'repo user:email read:user'
         },
       });
@@ -252,7 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `https://ai-code-reviewerz.netlify.app/auth/callback`,
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
         },
       });
       

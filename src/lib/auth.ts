@@ -5,14 +5,14 @@ import { supabase, isDemoMode, disableDemoMode } from './supabase';
 // GitHub OAuth configuration
 export const githubOAuthConfig = {
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
-  redirectUri: `https://ai-code-reviewerz.netlify.app/auth/callback`,
+  redirectUri: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
   scopes: ['repo', 'user:email', 'read:user']
 };
 
 // Google OAuth configuration
 export const googleOAuthConfig = {
   clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-  redirectUri: `https://ai-code-reviewerz.netlify.app/auth/callback`,
+  redirectUri: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
   scopes: ['openid', 'email', 'profile']
 };
 
@@ -416,7 +416,7 @@ export class AuthService {
         email,
         password,
         options: {
-          emailRedirectTo: `https://ai-code-reviewerz.netlify.app/auth/callback`,
+          emailRedirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
         }
       });
       
@@ -443,7 +443,7 @@ export class AuthService {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `https://ai-code-reviewerz.netlify.app/auth/reset-password`,
+        redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/reset-password`,
       });
       
       if (error) {
@@ -472,7 +472,7 @@ export class AuthService {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `https://ai-code-reviewerz.netlify.app/auth/callback`,
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
           scopes: 'repo user:email read:user'
         },
       });
@@ -509,7 +509,7 @@ export class AuthService {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `https://ai-code-reviewerz.netlify.app/auth/callback`,
+          redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
         },
       });
       
