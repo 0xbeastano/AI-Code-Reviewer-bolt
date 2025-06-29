@@ -6,6 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { CodebaseProvider } from './contexts/CodebaseContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import { CollaborationProvider } from './contexts/CollaborationContext';
+import { AuthProvider } from './components/Auth/AuthProvider';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import CodeReview from './pages/CodeReview';
@@ -36,76 +37,78 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <CodebaseProvider>
-            <WebSocketProvider>
-              <CollaborationProvider>
-                <Router>
-                  <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                    <Routes>
-                      {/* Public Routes */}
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/pricing" element={<PricingPage />} />
-                      <Route path="/docs" element={<DocumentationPage />} />
-                      
-                      {/* Test Dashboard - Public for testing */}
-                      <Route path="/test" element={<TestDashboard />} />
-                      
-                      {/* Main Application Routes */}
-                      <Route path="/dashboard" element={
-                        <Layout>
-                          <Dashboard />
-                        </Layout>
-                      } />
-                      <Route path="/review" element={
-                        <Layout>
-                          <CodeReview />
-                        </Layout>
-                      } />
-                      <Route path="/review/:id/results" element={
-                        <Layout>
-                          <ReviewResults />
-                        </Layout>
-                      } />
-                      <Route path="/analytics" element={
-                        <Layout>
-                          <Analytics />
-                        </Layout>
-                      } />
-                      <Route path="/settings" element={
-                        <Layout>
-                          <Settings />
-                        </Layout>
-                      } />
-                      <Route path="/deploy" element={
-                        <Layout>
-                          <DeployPage />
-                        </Layout>
-                      } />
-                      {/* Pull Request Review Route */}
-                      <Route path="/pull-request/:owner/:repo" element={
-                        <Layout>
-                          <PullRequestReview />
-                        </Layout>
-                      } />
-                      
-                      {/* Fallback - Redirect to dashboard */}
-                      <Route path="*" element={<Dashboard />} />
-                    </Routes>
-                    <Toaster 
-                      position="top-right"
-                      toastOptions={{
-                        duration: 4000,
-                        style: {
-                          background: 'var(--toast-bg)',
-                          color: 'var(--toast-color)',
-                        },
-                      }}
-                    />
-                  </div>
-                </Router>
-              </CollaborationProvider>
-            </WebSocketProvider>
-          </CodebaseProvider>
+          <AuthProvider>
+            <CodebaseProvider>
+              <WebSocketProvider>
+                <CollaborationProvider>
+                  <Router>
+                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                      <Routes>
+                        {/* Public Routes */}
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/pricing" element={<PricingPage />} />
+                        <Route path="/docs" element={<DocumentationPage />} />
+                        
+                        {/* Test Dashboard - Public for testing */}
+                        <Route path="/test" element={<TestDashboard />} />
+                        
+                        {/* Main Application Routes */}
+                        <Route path="/dashboard" element={
+                          <Layout>
+                            <Dashboard />
+                          </Layout>
+                        } />
+                        <Route path="/review" element={
+                          <Layout>
+                            <CodeReview />
+                          </Layout>
+                        } />
+                        <Route path="/review/:id/results" element={
+                          <Layout>
+                            <ReviewResults />
+                          </Layout>
+                        } />
+                        <Route path="/analytics" element={
+                          <Layout>
+                            <Analytics />
+                          </Layout>
+                        } />
+                        <Route path="/settings" element={
+                          <Layout>
+                            <Settings />
+                          </Layout>
+                        } />
+                        <Route path="/deploy" element={
+                          <Layout>
+                            <DeployPage />
+                          </Layout>
+                        } />
+                        {/* Pull Request Review Route */}
+                        <Route path="/pull-request/:owner/:repo" element={
+                          <Layout>
+                            <PullRequestReview />
+                          </Layout>
+                        } />
+                        
+                        {/* Fallback - Redirect to dashboard */}
+                        <Route path="*" element={<Dashboard />} />
+                      </Routes>
+                      <Toaster 
+                        position="top-right"
+                        toastOptions={{
+                          duration: 4000,
+                          style: {
+                            background: 'var(--toast-bg)',
+                            color: 'var(--toast-color)',
+                          },
+                        }}
+                      />
+                    </div>
+                  </Router>
+                </CollaborationProvider>
+              </WebSocketProvider>
+            </CodebaseProvider>
+          </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
