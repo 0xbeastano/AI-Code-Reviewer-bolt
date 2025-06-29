@@ -5,14 +5,14 @@ import { supabase, isDemoMode, disableDemoMode } from './supabase';
 // GitHub OAuth configuration
 export const githubOAuthConfig = {
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
-  redirectUri: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
+  redirectUri: `${import.meta.env.VITE_APP_URL || 'https://ai-code-reviewerz.netlify.app'}/auth/callback`,
   scopes: ['repo', 'user:email', 'read:user']
 };
 
 // Google OAuth configuration
 export const googleOAuthConfig = {
   clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-  redirectUri: `${import.meta.env.VITE_APP_URL || window.location.origin}/auth/callback`,
+  redirectUri: `${import.meta.env.VITE_APP_URL || 'https://ai-code-reviewerz.netlify.app'}/auth/callback`,
   scopes: ['openid', 'email', 'profile']
 };
 
@@ -424,7 +424,7 @@ export class AuthService {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/auth/reset-password',
+        redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/reset-password',
       });
       
       if (error) {
@@ -453,7 +453,7 @@ export class AuthService {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/callback',
           scopes: 'repo user:email read:user'
         },
       });
@@ -490,7 +490,7 @@ export class AuthService {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: 'https://ai-code-reviewerz.netlify.app/auth/callback',
         },
       });
       
