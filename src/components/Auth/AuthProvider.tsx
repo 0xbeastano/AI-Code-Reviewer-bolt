@@ -54,6 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(session?.user ?? null);
           if (session?.user) {
             console.log('User authenticated:', session.user.email);
+            console.log('User metadata:', session.user.user_metadata);
+            console.log('App metadata:', session.user.app_metadata);
+            console.log('Provider token:', session.provider_token ? 'Available' : 'Not available');
           }
         }
       } catch (error) {
@@ -226,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data.url) {
-        console.log('Redirecting to GitHub OAuth URL');
+        console.log('Redirecting to GitHub OAuth URL:', data.url);
         window.location.href = data.url;
       }
       
@@ -260,7 +263,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data.url) {
-        console.log('Redirecting to Google OAuth URL');
+        console.log('Redirecting to Google OAuth URL:', data.url);
         window.location.href = data.url;
       }
       

@@ -459,14 +459,16 @@ export class AuthService {
       });
       
       if (error) {
+        console.error('GitHub OAuth error:', error);
         return { error };
       }
       
       if (data.url) {
-        window.location.href = data.url;
+        console.log('Redirecting to GitHub OAuth URL:', data.url);
+        return { url: data.url, error: undefined };
       }
       
-      return { url: data.url, error: undefined };
+      return { error: { message: 'No redirect URL returned from Supabase' } };
     } catch (error) {
       console.error('GitHub sign in error:', error);
       return { error: { message: 'An unexpected error occurred' } };
