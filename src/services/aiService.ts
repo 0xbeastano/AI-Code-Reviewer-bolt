@@ -1,13 +1,13 @@
 import { CodeExplanation, TestGenerationResult } from '../types';
 import { supabase, isDemoMode } from "../lib/supabase";
 import { authService } from "../lib/auth";
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 
 export class AIService {
   static instance: AIService;
   private apiUrl: string;
   private defaultModel: string = 'gpt-4o';
-  private openai: OpenAIApi | null = null;
+  private openai: OpenAI | null = null;
 
   static getInstance(): AIService {
     if (!AIService.instance) {
@@ -24,8 +24,7 @@ export class AIService {
   private initializeOpenAI() {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (apiKey) {
-      const configuration = new Configuration({ apiKey });
-      this.openai = new OpenAIApi(configuration);
+      this.openai = new OpenAI({ apiKey });
     }
   }
 
@@ -180,7 +179,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
 `;
 
     try {
-      const response = await this.openai.createChatCompletion({
+      const response = await this.openai.chat.completions.create({
         model: modelId === "gpt-4o" ? "gpt-4" : modelId,
         messages: [
           {
@@ -196,7 +195,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
         max_tokens: 4000
       });
 
-      const content = response.data.choices[0]?.message?.content;
+      const content = response.choices[0]?.message?.content;
       if (!content) {
         throw new Error(`No response from OpenAI`);
       }
@@ -312,7 +311,7 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
 `;
 
     try {
-      const response = await this.openai.createChatCompletion({
+      const response = await this.openai.chat.completions.create({
         model: modelId === "gpt-4o" ? "gpt-4" : modelId,
         messages: [
           {
@@ -328,7 +327,7 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
         max_tokens: 2500
       });
 
-      const content = response.data.choices[0]?.message?.content;
+      const content = response.choices[0]?.message?.content;
       if (!content) {
         throw new Error(`No response from OpenAI`);
       }
@@ -462,7 +461,7 @@ For other languages, use the most appropriate testing framework.
 `;
 
     try {
-      const response = await this.openai.createChatCompletion({
+      const response = await this.openai.chat.completions.create({
         model: modelId === "gpt-4o" ? "gpt-4" : modelId,
         messages: [
           {
@@ -478,7 +477,7 @@ For other languages, use the most appropriate testing framework.
         max_tokens: 3000
       });
 
-      const content = response.data.choices[0]?.message?.content;
+      const content = response.choices[0]?.message?.content;
       if (!content) {
         throw new Error(`No response from OpenAI`);
       }
@@ -542,7 +541,7 @@ Use the appropriate documentation format for ${language} (JSDoc for JavaScript, 
 `;
 
     try {
-      const response = await this.openai.createChatCompletion({
+      const response = await this.openai.chat.completions.create({
         model: modelId === "gpt-4o" ? "gpt-4" : modelId,
         messages: [
           {
@@ -558,7 +557,7 @@ Use the appropriate documentation format for ${language} (JSDoc for JavaScript, 
         max_tokens: 2500
       });
 
-      const content = response.data.choices[0]?.message?.content;
+      const content = response.choices[0]?.message?.content;
       if (!content) {
         throw new Error(`No response from OpenAI`);
       }
