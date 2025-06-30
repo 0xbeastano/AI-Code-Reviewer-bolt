@@ -24,10 +24,17 @@ export class AIService {
   private initializeOpenAI() {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (apiKey) {
-      this.openai = new OpenAI({ 
-        apiKey,
-        dangerouslyAllowBrowser: true
-      });
+      try {
+        this.openai = new OpenAI({ 
+          apiKey,
+          dangerouslyAllowBrowser: true // Required for browser usage
+        });
+        console.log('OpenAI client initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize OpenAI client:', error);
+      }
+    } else {
+      console.warn('OpenAI API key not found in environment variables');
     }
   }
 
@@ -39,13 +46,17 @@ export class AIService {
     modelId: string = this.defaultModel
   ): Promise<any> {
     try {
+      console.log(`Analyzing code with model: ${modelId}, file: ${filePath}`);
+      
       // If OpenAI API key is available, use direct API call
       if (this.openai) {
+        console.log('Using direct OpenAI API call');
         return this.analyzeCodeWithOpenAI(code, language, filePath, generateImprovedCode, modelId);
       }
 
       // Otherwise, use Supabase Edge Function
       if (isDemoMode()) {
+        console.log('Demo mode: Attempting to use Edge Function');
         // For demo mode, we'll still try to use the Edge Function if available
         try {
           const response = await fetch(`${this.apiUrl}/functions/v1/analyze-code`, {
@@ -65,19 +76,26 @@ export class AIService {
           });
 
           if (response.ok) {
-            return await response.json();
+            const result = await response.json();
+            console.log('Edge function call successful');
+            return result;
+          } else {
+            console.error('Edge function returned error:', await response.text());
+            throw new Error('Edge function call failed');
           }
         } catch (error) {
           console.error('Edge function call failed, falling back to mock data:', error);
         }
         
         // If edge function fails or is not available, use mock data
+        console.log('Using mock analysis data');
         return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
       }
 
       const user = authService.getCurrentUser();
       const userId = user?.id || 'anonymous';
 
+      console.log('Using Supabase Edge Function with user:', userId);
       // Call Supabase Edge Function
       const response = await fetch(`${this.apiUrl}/functions/v1/analyze-code`, {
         method: 'POST',
@@ -96,13 +114,16 @@ export class AIService {
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.error(`API request failed with status ${response.status}:`, errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
       return result;
     } catch (error) {
       console.error('Code analysis failed:', error);
+      console.log('Falling back to mock analysis data');
       return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
     }
   }
@@ -118,6 +139,7 @@ export class AIService {
       throw new Error('OpenAI client not initialized');
     }
 
+    console.log(`Analyzing with OpenAI model: ${modelId}`);
     const prompt = `
 You are an expert code reviewer and software engineer with deep expertise in ${language}. Analyze this code file (${filePath}) and provide comprehensive feedback.
 
@@ -182,6 +204,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
 `;
 
     try {
+      console.log('Sending request to OpenAI API');
       const response = await this.openai.chat.completions.create({
         model: modelId === "gpt-4o" ? "gpt-4" : modelId,
         messages: [
@@ -203,13 +226,22 @@ For suggestions, make sure to include actual code snippets from the file in the 
         throw new Error(`No response from OpenAI`);
       }
 
+      console.log('Received response from OpenAI');
       // Extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
+        console.error('Could not parse JSON from OpenAI response:', content);
         throw new Error(`Could not parse JSON from OpenAI response`);
       }
 
-      return JSON.parse(jsonMatch[0]);
+      try {
+        const parsedResult = JSON.parse(jsonMatch[0]);
+        console.log('Successfully parsed JSON response');
+        return parsedResult;
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Content:', jsonMatch[0]);
+        throw new Error(`Failed to parse JSON: ${parseError.message}`);
+      }
     } catch (error) {
       console.error('OpenAI API call failed:', error);
       throw error;

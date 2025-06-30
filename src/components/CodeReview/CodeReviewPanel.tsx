@@ -101,10 +101,10 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-4">
-          <div className="flex">
+          <div className="flex overflow-x-auto hide-scrollbar">
             <button
               onClick={() => setActiveTab('code')}
-              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
                 activeTab === 'code'
                   ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
@@ -115,7 +115,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
             </button>
             <button
               onClick={handleExplainCode}
-              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
                 activeTab === 'explain'
                   ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
@@ -126,7 +126,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
             </button>
             <button
               onClick={handleGenerateTests}
-              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 ${
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
                 activeTab === 'test'
                   ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
@@ -201,7 +201,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
                 {metrics.security && (
                   <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                     <div className="flex items-center space-x-2 mb-2">
-                      <Eye className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white">Security</h4>
                     </div>
                     <div className="flex items-center">

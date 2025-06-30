@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Brain, Zap, Shield, Clock, DollarSign, Info, ChevronDown, Star, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Brain, Zap, Shield, Clock, DollarSign, Info, ChevronDown, Star, Sparkles } from 'lucide-react';
 
 export interface AIModel {
   id: string;
@@ -174,8 +174,8 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-0">
           AI Model Selection
         </label>
         <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
@@ -191,7 +191,7 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({
           animate={{ opacity: 1, y: 0 }}
           className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
               Recommended for your codebase: {recommendedModel.name}
@@ -225,7 +225,7 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({
                 <Star className="w-4 h-4 text-yellow-500" />
               )}
             </div>
-            <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+            <div className="hidden sm:flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center space-x-1">
                 {getSpeedIcon(selectedModelData.speed)}
                 <span className={getSpeedColor(selectedModelData.speed)}>
@@ -280,7 +280,7 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({
                       </p>
                       
                       {/* Model Stats */}
-                      <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2 text-xs">
                             <Zap className="w-3 h-3" />

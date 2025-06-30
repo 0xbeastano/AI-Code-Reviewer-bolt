@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Code2, Shield, Zap, Eye, Wrench, BarChart3, Brain, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Code2, Shield, Zap, Eye, Wrench, BarChart3, Brain, Sparkles } from 'lucide-react';
 
 interface AnalysisProgressProps {
   currentStep: string;
@@ -137,7 +137,7 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
             transition={{ delay: index * 0.1 }}
             whileHover={{ 
               y: -5,
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.04)"
             }}
             className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg"
           >

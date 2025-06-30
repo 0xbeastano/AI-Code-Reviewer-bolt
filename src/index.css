@@ -77,6 +77,16 @@
   background: rgba(75, 85, 99, 0.7);
 }
 
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* Glass effect */
 .glass-effect {
   background: rgba(255, 255, 255, 0.1);

@@ -188,7 +188,7 @@ const CodeReview: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-4">
           {canGoBack && (
             <BackButton onClick={goBack} />
@@ -204,12 +204,10 @@ const CodeReview: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="text-right">
-            <div className="text-sm text-gray-600 dark:text-gray-400">Selected Model</div>
-            <div className="text-lg font-semibold text-primary-600 dark:text-primary-400">
-              {selectedAIModel.toUpperCase()}
-            </div>
+        <div className="text-right">
+          <div className="text-sm text-gray-600 dark:text-gray-400">Selected Model</div>
+          <div className="text-lg font-semibold text-primary-600 dark:text-primary-400">
+            {selectedAIModel.toUpperCase()}
           </div>
         </div>
       </div>
@@ -233,6 +231,7 @@ const CodeReview: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
+          className="min-h-[400px]"
         >
           {currentStep === 'upload' && (
             <div className="space-y-6">
@@ -248,7 +247,7 @@ const CodeReview: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                       Codebase Uploaded Successfully
                     </h3>
-                    <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                           {currentCodebase.files.length}
@@ -356,7 +355,7 @@ const CodeReview: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-center space-x-4">
+                <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
                   <button
                     onClick={handleExportReport}
                     className="flex items-center px-6 py-3 bg-secondary-600 hover:bg-secondary-700 text-white font-medium rounded-lg transition-colors"
