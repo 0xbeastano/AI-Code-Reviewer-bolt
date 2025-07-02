@@ -4,8 +4,17 @@ import CryptoJS from 'crypto-js';
  * Utility functions for security operations
  */
 
-// Secret key for encryption (in a real app, this would be an environment variable)
-const SECRET_KEY = 'ai-code-review-secure-key';
+// Get secret key from environment variable with fallback warning
+const getSecretKey = (): string => {
+  const key = import.meta.env.VITE_ENCRYPTION_SECRET;
+  if (!key) {
+    console.error('VITE_ENCRYPTION_SECRET not found in environment variables. Using fallback key for development only.');
+    return 'dev-fallback-key-do-not-use-in-production';
+  }
+  return key;
+};
+
+const SECRET_KEY = getSecretKey();
 
 /**
  * Encrypt sensitive data
@@ -64,13 +73,24 @@ export const generateToken = (length: number = 32): string => {
 };
 
 /**
- * Validate a CSRF token
+ * Validate a CSRF token using constant-time comparison to prevent timing attacks
  * @param token - Token to validate
  * @param storedToken - Stored token to compare against
  * @returns Whether the token is valid
  */
 export const validateCsrfToken = (token: string, storedToken: string): boolean => {
-  return token === storedToken;
+  // Ensure tokens are same length to prevent timing attacks based on length
+  if (token.length !== storedToken.length) {
+    return false;
+  }
+  
+  // Constant-time comparison to prevent timing attacks
+  let result = 0;
+  for (let i = 0; i < token.length; i++) {
+    result |= token.charCodeAt(i) ^ storedToken.charCodeAt(i);
+  }
+  
+  return result === 0;
 };
 
 /**

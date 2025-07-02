@@ -100,17 +100,15 @@ export class OAuthTestRunner {
   // GitHub OAuth Tests
   private async testGitHubConfig(): Promise<void> {
     const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
-    const clientSecret = import.meta.env.VITE_GITHUB_CLIENT_SECRET;
     
     if (!clientId || clientId === 'your-github-client-id') {
       throw new Error('GitHub Client ID not configured');
     }
     
-    if (!clientSecret || clientSecret === 'your-github-client-secret') {
-      throw new Error('GitHub Client Secret not configured');
-    }
-    
-    console.log('✅ GitHub OAuth credentials configured');
+    // Note: Client secret should never be accessible in client-side code
+    // This check is removed for security reasons - secrets should be server-side only
+    console.log('✅ GitHub OAuth Client ID configured');
+    console.log('⚠️ GitHub Client Secret should be configured server-side only');
   }
 
   private async testGitHubUrlGeneration(): Promise<void> {
@@ -181,17 +179,15 @@ export class OAuthTestRunner {
   // Google OAuth Tests
   private async testGoogleConfig(): Promise<void> {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
     
     if (!clientId || clientId === 'your-google-client-id') {
       throw new Error('Google Client ID not configured');
     }
     
-    if (!clientSecret || clientSecret === 'your-google-client-secret') {
-      throw new Error('Google Client Secret not configured');
-    }
-    
-    console.log('✅ Google OAuth credentials configured');
+    // Note: Client secret should never be accessible in client-side code
+    // This check is removed for security reasons - secrets should be server-side only
+    console.log('✅ Google OAuth Client ID configured');
+    console.log('⚠️ Google Client Secret should be configured server-side only');
   }
 
   private async testGoogleUrlGeneration(): Promise<void> {
