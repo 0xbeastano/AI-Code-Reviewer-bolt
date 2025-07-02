@@ -362,7 +362,7 @@ const PricingPage: React.FC = () => {
               },
               {
                 question: "What's the difference between the AI models?",
-                answer: "We offer multiple AI models with different strengths. GPT-4o provides the best overall analysis, while Claude models offer larger context windows for bigger codebases. You can select the model that best fits your specific needs and codebase size."
+                answer: "We offer multiple AI models with different strengths. Claude 3 Haiku is our default model providing excellent speed and cost efficiency, while other models like GPT-4o and Claude 3 Opus offer specialized capabilities. You can select the model that best fits your specific needs and codebase size."
               },
               {
                 question: "Do you offer a free trial?",

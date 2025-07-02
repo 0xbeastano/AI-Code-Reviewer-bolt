@@ -207,7 +207,8 @@ const DocumentationPage: React.FC = () => {
                   Choose from a variety of AI models to best suit your needs:
                 </p>
                 <ul>
-                  <li><strong>GPT-4o</strong>: Best overall analysis with balanced performance</li>
+                  <li><strong>Claude 3 Haiku</strong>: Default model with excellent speed and cost efficiency</li>
+                <li><strong>GPT-4o</strong>: Alternative model with balanced performance</li>
                   <li><strong>Claude 3 Opus</strong>: Largest context window for big codebases</li>
                   <li><strong>GPT-4 Turbo</strong>: Fast analysis for quick feedback</li>
                 </ul>
@@ -230,7 +231,7 @@ const DocumentationPage: React.FC = () => {
 // Initialize the AI Code Review client
 const codeReview = new AICodeReview({
   apiKey: 'your-api-key',
-  model: 'gpt-4o'
+                  model: 'claude-3-haiku'
 });
 
 // Start a code review

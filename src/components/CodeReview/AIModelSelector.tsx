@@ -140,15 +140,15 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({
     }
   ];
 
-  const selectedModelData = models.find(m => m.id === selectedModel) || models[0];
+  const selectedModelData = models.find(m => m.id === selectedModel) || models.find(m => m.id === 'claude-3-haiku') || models[0];
 
   const getRecommendation = () => {
     if (codebaseSize > 10000 || fileCount > 50) {
       return models.find(m => m.id === 'claude-3-opus') || models[0];
     } else if (codebaseSize > 5000 || fileCount > 20) {
-      return models.find(m => m.id === 'gpt-4o') || models[0];
+      return models.find(m => m.id === 'claude-3-haiku') || models[0];
     } else {
-      return models.find(m => m.id === 'gpt-4-turbo') || models[0];
+      return models.find(m => m.id === 'claude-3-haiku') || models[0];
     }
   };
 
@@ -376,10 +376,10 @@ const AIModelSelector: React.FC<AIModelSelectorProps> = ({
         </h4>
         <ul className="text-xs text-blue-600 dark:text-blue-300 space-y-1">
           <li>• <strong>{"Large codebases (>10MB):"}</strong> Use Claude 3 Opus for maximum context</li>
-          <li>• <strong>Quick analysis:</strong> GPT-4 Turbo or Claude 3 Haiku for speed</li>
-          <li>• <strong>Security reviews:</strong> GPT-4 for highest accuracy</li>
+          <li>• <strong>Quick analysis:</strong> Claude 3 Haiku (default) for speed and efficiency</li>
+          <li>• <strong>Security reviews:</strong> Claude 3 Sonnet or GPT-4 for highest accuracy</li>
           <li>• <strong>Cost optimization:</strong> Claude 3 Haiku for bulk processing</li>
-          <li>• <strong>Balanced performance:</strong> GPT-4o for most use cases</li>
+          <li>• <strong>Balanced performance:</strong> Claude 3 Haiku (recommended) for most use cases</li>
         </ul>
       </div>
     </div>

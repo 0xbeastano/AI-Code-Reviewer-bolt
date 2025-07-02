@@ -2,12 +2,14 @@ import { CodeExplanation, TestGenerationResult } from '../types';
 import { supabase, isDemoMode } from "../lib/supabase";
 import { authService } from "../lib/auth";
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 export class AIService {
   static instance: AIService;
   private apiUrl: string;
-  private defaultModel: string = 'gpt-4o';
+  private defaultModel: string = 'claude-3-haiku';
   private openai: OpenAI | null = null;
+  private anthropic: Anthropic | null = null;
 
   static getInstance(): AIService {
     if (!AIService.instance) {
@@ -19,6 +21,7 @@ export class AIService {
   constructor() {
     this.apiUrl = import.meta.env.VITE_SUPABASE_URL || '';
     this.initializeOpenAI();
+    this.initializeClaude();
   }
 
   private initializeOpenAI() {
@@ -38,6 +41,23 @@ export class AIService {
     }
   }
 
+  private initializeClaude() {
+    const apiKey = import.meta.env.VITE_CLAUDE_API_KEY;
+    if (apiKey) {
+      try {
+        this.anthropic = new Anthropic({ 
+          apiKey,
+          dangerouslyAllowBrowser: true // Required for browser usage
+        });
+        console.log('Claude client initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize Claude client:', error);
+      }
+    } else {
+      console.warn('Claude API key not found in environment variables');
+    }
+  }
+
   async analyzeCode(
     code: string, 
     language: string, 
@@ -48,10 +68,20 @@ export class AIService {
     try {
       console.log(`Analyzing code with model: ${modelId}, file: ${filePath}`);
       
-      // If OpenAI API key is available, use direct API call
-      if (this.openai) {
-        console.log('Using direct OpenAI API call');
-        return this.analyzeCodeWithOpenAI(code, language, filePath, generateImprovedCode, modelId);
+      // Check if using Claude model
+      if (this.isClaudeModel(modelId)) {
+        if (this.anthropic) {
+          console.log('Using direct Claude API call');
+          return this.analyzeCodeWithClaude(code, language, filePath, generateImprovedCode, modelId);
+        }
+      }
+      
+      // Check if using OpenAI model
+      if (this.isOpenAIModel(modelId)) {
+        if (this.openai) {
+          console.log('Using direct OpenAI API call');
+          return this.analyzeCodeWithOpenAI(code, language, filePath, generateImprovedCode, modelId);
+        }
       }
 
       // Otherwise, use Supabase Edge Function
@@ -255,9 +285,18 @@ For suggestions, make sure to include actual code snippets from the file in the 
     modelId: string = this.defaultModel
   ): Promise<CodeExplanation> {
     try {
-      // If OpenAI API key is available, use direct API call
-      if (this.openai) {
-        return this.explainCodeWithOpenAI(code, language, modelId);
+      // Check if using Claude model
+      if (this.isClaudeModel(modelId)) {
+        if (this.anthropic) {
+          return this.explainCodeWithClaude(code, language, modelId);
+        }
+      }
+      
+      // Check if using OpenAI model
+      if (this.isOpenAIModel(modelId)) {
+        if (this.openai) {
+          return this.explainCodeWithOpenAI(code, language, modelId);
+        }
       }
 
       // Otherwise, use Supabase Edge Function
@@ -380,6 +419,65 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
     }
   }
 
+  private async explainCodeWithClaude(
+    code: string,
+    language: string,
+    modelId: string = this.defaultModel
+  ): Promise<CodeExplanation> {
+    if (!this.anthropic) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const prompt = `
+Please explain the following ${language} code in detail:
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+Provide your response in JSON format with the following structure:
+{
+  "explanation": "A clear, detailed explanation of what the code does, how it works, and its purpose",
+  "complexity": "An assessment of the code's complexity and readability",
+  "keyComponents": ["List of key functions, classes, or components in the code", "With brief descriptions"],
+  "potentialIssues": ["List of potential issues, edge cases, or improvements", "That could be addressed"]
+}
+
+Be thorough but concise. Focus on helping a developer understand the code's purpose, structure, and potential issues.
+`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: modelId,
+        max_tokens: 2500,
+        temperature: 0.3,
+        system: `You are an expert code explainer who helps developers understand complex code. Provide clear, accurate explanations in the exact JSON format requested.`,
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      const content = response.content[0];
+      if (!content || content.type !== 'text') {
+        throw new Error(`No valid response from Claude`);
+      }
+
+      // Extract JSON from response
+      const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error(`Could not parse JSON from Claude response`);
+      }
+
+      return JSON.parse(jsonMatch[0]);
+    } catch (error) {
+      console.error('Claude API call failed:', error);
+      throw error;
+    }
+  }
+
   async generateTests(
     code: string, 
     language: string, 
@@ -387,9 +485,18 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
     modelId: string = this.defaultModel
   ): Promise<TestGenerationResult> {
     try {
-      // If OpenAI API key is available, use direct API call
-      if (this.openai) {
-        return this.generateTestsWithOpenAI(code, language, filePath, modelId);
+      // Check if using Claude model
+      if (this.isClaudeModel(modelId)) {
+        if (this.anthropic) {
+          return this.generateTestsWithClaude(code, language, filePath, modelId);
+        }
+      }
+      
+      // Check if using OpenAI model
+      if (this.isOpenAIModel(modelId)) {
+        if (this.openai) {
+          return this.generateTestsWithOpenAI(code, language, filePath, modelId);
+        }
       }
 
       // Otherwise, use Supabase Edge Function
@@ -530,15 +637,99 @@ For other languages, use the most appropriate testing framework.
     }
   }
 
+  private async generateTestsWithClaude(
+    code: string,
+    language: string,
+    filePath: string,
+    modelId: string = this.defaultModel
+  ): Promise<TestGenerationResult> {
+    if (!this.anthropic) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const prompt = `
+Generate comprehensive test cases for the following ${language} code:
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+Provide your response in JSON format with the following structure:
+{
+  "testCode": "Complete test code that can be directly used to test the provided code",
+  "testCases": [
+    {
+      "description": "Description of what this test case verifies",
+      "input": "Sample input or parameters",
+      "expectedOutput": "Expected result or behavior"
+    }
+  ],
+  "coverage": 85, // Estimated test coverage percentage
+  "framework": "Name of the testing framework used (e.g., Jest, pytest)"
+}
+
+The test code should:
+1. Use the appropriate testing framework for ${language}
+2. Include all necessary imports and setup
+3. Cover edge cases and main functionality
+4. Be well-documented and follow best practices
+5. Be ready to run with minimal modifications
+
+For JavaScript/TypeScript, use Jest or Mocha.
+For Python, use pytest or unittest.
+For other languages, use the most appropriate testing framework.
+`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: modelId,
+        max_tokens: 3000,
+        temperature: 0.3,
+        system: `You are an expert test engineer who specializes in writing comprehensive, effective test suites. Generate practical, runnable test code in the exact JSON format requested.`,
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      const content = response.content[0];
+      if (!content || content.type !== 'text') {
+        throw new Error(`No valid response from Claude`);
+      }
+
+      // Extract JSON from response
+      const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error(`Could not parse JSON from Claude response`);
+      }
+
+      return JSON.parse(jsonMatch[0]);
+    } catch (error) {
+      console.error('Claude API call failed:', error);
+      throw error;
+    }
+  }
+
   async generateDocumentation(
     code: string, 
     language: string,
     modelId: string = this.defaultModel
   ): Promise<string> {
     try {
-      // If OpenAI API key is available, use direct API call
-      if (this.openai) {
-        return this.generateDocumentationWithOpenAI(code, language, modelId);
+      // Check if using Claude model
+      if (this.isClaudeModel(modelId)) {
+        if (this.anthropic) {
+          return this.generateDocumentationWithClaude(code, language, modelId);
+        }
+      }
+      
+      // Check if using OpenAI model
+      if (this.isOpenAIModel(modelId)) {
+        if (this.openai) {
+          return this.generateDocumentationWithOpenAI(code, language, modelId);
+        }
       }
 
       // Otherwise, use mock data
@@ -600,6 +791,185 @@ Use the appropriate documentation format for ${language} (JSDoc for JavaScript, 
       return content;
     } catch (error) {
       console.error('OpenAI API call failed:', error);
+      throw error;
+    }
+  }
+
+  private async generateDocumentationWithClaude(
+    code: string,
+    language: string,
+    modelId: string = this.defaultModel
+  ): Promise<string> {
+    if (!this.anthropic) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const prompt = `
+Generate comprehensive documentation for the following ${language} code:
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+Please provide:
+1. A clear overview of what this code does
+2. Documentation for each function, class, and method
+3. Parameter descriptions and return value explanations
+4. Usage examples where appropriate
+5. Any important notes or caveats
+
+Use the appropriate documentation format for ${language} (JSDoc for JavaScript, docstrings for Python, etc.).
+`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: modelId,
+        max_tokens: 2500,
+        temperature: 0.3,
+        system: `You are an expert technical writer who specializes in creating clear, comprehensive code documentation. Generate documentation that follows best practices for the given programming language.`,
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      const content = response.content[0];
+      if (!content || content.type !== 'text') {
+        throw new Error(`No valid response from Claude`);
+      }
+
+      return content.text;
+    } catch (error) {
+      console.error('Claude API call failed:', error);
+      throw error;
+    }
+  }
+
+  // Helper methods to determine model type
+  private isClaudeModel(modelId: string): boolean {
+    return modelId.startsWith('claude-');
+  }
+
+  private isOpenAIModel(modelId: string): boolean {
+    return modelId.startsWith('gpt-') || modelId === 'gpt-4o';
+  }
+
+  // Claude analysis methods
+  private async analyzeCodeWithClaude(
+    code: string,
+    language: string,
+    filePath: string,
+    generateImprovedCode: boolean = false,
+    modelId: string = this.defaultModel
+  ): Promise<any> {
+    if (!this.anthropic) {
+      throw new Error('Claude client not initialized');
+    }
+
+    console.log(`Analyzing with Claude model: ${modelId}`);
+    const prompt = `
+You are an expert code reviewer and software engineer with deep expertise in ${language}. Analyze this code file (${filePath}) and provide comprehensive feedback.
+
+Code to analyze:
+\`\`\`${language}
+${code}
+\`\`\`
+
+Please provide a detailed analysis in JSON format with the following structure:
+{
+  "issues": [
+    {
+      "id": "unique_id",
+      "type": "security|performance|style|bug|smell",
+      "severity": "low|medium|high|critical",
+      "line": number,
+      "column": number,
+      "message": "clear description of the issue",
+      "rule": "rule_name",
+      "suggestion": "how to fix this issue"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "unique_id",
+      "type": "refactor|optimize|security|style|documentation",
+      "priority": "low|medium|high",
+      "description": "what improvement to make",
+      "before": "original code snippet",
+      "after": "improved code snippet",
+      "impact": "expected benefit and improvement"
+    }
+  ],
+  "metrics": {
+    "complexity": number (0-100, lower is better),
+    "maintainability": number (0-100, higher is better),
+    "security": number (0-100, higher is better),
+    "performance": number (0-100, higher is better),
+    "coverage": number (0-100, estimated test coverage),
+    "duplicateLines": number,
+    "linesOfCode": number,
+    "cyclomaticComplexity": number (0-100, lower is better),
+    "cognitiveComplexity": number (0-100, lower is better)
+  }${generateImprovedCode ? ',\n  "improvedCode": "full improved version of the code"' : ''}
+}
+
+Focus on:
+1. Security vulnerabilities (XSS, SQL injection, authentication issues, input validation)
+2. Performance optimizations (algorithm efficiency, memory usage, async patterns)
+3. Code quality (readability, maintainability, best practices, SOLID principles)
+4. Bug detection (logic errors, edge cases, type issues, null pointer exceptions)
+5. Style improvements (formatting, naming conventions, code organization)
+6. Modern language features and patterns
+7. Complexity analysis (both cyclomatic and cognitive complexity)
+
+For complexity metrics:
+- Cyclomatic complexity measures the number of linearly independent paths through the code
+- Cognitive complexity measures how difficult the code is to understand based on nesting, control flow, and logical operations
+
+Provide actionable, specific feedback with clear examples. Be thorough but practical.
+For suggestions, make sure to include actual code snippets from the file in the "before" field and realistic improvements in the "after" field.
+`;
+
+    try {
+      console.log('Sending request to Claude API');
+      const response = await this.anthropic.messages.create({
+        model: modelId,
+        max_tokens: 4000,
+        temperature: 0.3,
+        system: `You are an expert code reviewer with deep knowledge of software engineering best practices, security, and performance optimization. Provide thorough, actionable feedback in the exact JSON format requested. Focus on practical improvements that will make the code more secure, performant, and maintainable. Always include actual code snippets from the provided code in your suggestions. Pay special attention to complexity metrics, both cyclomatic and cognitive.`,
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      const content = response.content[0];
+      if (!content || content.type !== 'text') {
+        throw new Error(`No valid response from Claude`);
+      }
+
+      console.log('Received response from Claude');
+      // Extract JSON from response
+      const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('Could not parse JSON from Claude response:', content.text);
+        throw new Error(`Could not parse JSON from Claude response`);
+      }
+
+      try {
+        const parsedResult = JSON.parse(jsonMatch[0]);
+        console.log('Successfully parsed JSON response');
+        return parsedResult;
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Content:', jsonMatch[0]);
+        throw new Error(`Failed to parse JSON: ${parseError.message}`);
+      }
+    } catch (error) {
+      console.error('Claude API call failed:', error);
       throw error;
     }
   }

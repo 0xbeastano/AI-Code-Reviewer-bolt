@@ -44,7 +44,7 @@ const CodeReview: React.FC = () => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [currentAnalysisStep, setCurrentAnalysisStep] = useState('parsing');
   const [filesProcessed, setFilesProcessed] = useState(0);
-  const [selectedAIModel, setSelectedAIModel] = useState('gpt-4o');
+  const [selectedAIModel, setSelectedAIModel] = useState('claude-3-haiku');
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 

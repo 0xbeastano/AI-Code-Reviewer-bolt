@@ -29,7 +29,7 @@ class PullRequestService {
     owner: string,
     repo: string,
     prNumber: number,
-    model: string = 'gpt-4o'
+    model: string = 'claude-3-haiku'
   ): Promise<PullRequestSummary> {
     try {
       // In a real implementation, this would call the OpenAI API via a Supabase Edge Function

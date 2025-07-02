@@ -35,7 +35,7 @@ const PullRequestReview: React.FC = () => {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   
-  const [selectedModel, setSelectedModel] = useState('gpt-4o');
+  const [selectedModel, setSelectedModel] = useState('claude-3-haiku');
   
   useEffect(() => {
     if (!owner || !repo) {
