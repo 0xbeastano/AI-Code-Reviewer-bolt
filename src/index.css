@@ -1,3 +1,6 @@
+/* Import Premium Theme - Must come first */
+@import './styles/premiumTheme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

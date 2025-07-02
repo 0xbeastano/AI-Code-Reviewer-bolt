@@ -21,6 +21,7 @@ import CollaborationButton from '../Collaboration/CollaborationButton';
 import CollaborationPanel from '../Collaboration/CollaborationPanel';
 import WarningBanner from '../WarningBanner';
 import EnhancedCodeReview from './EnhancedCodeReview';
+import PremiumCodeReview from './PremiumCodeReview';
 import { AIService } from '../../services/aiService';
 import { useCollaboration } from '../../contexts/CollaborationContext';
 import toast from 'react-hot-toast';
@@ -42,7 +43,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
   suggestions = [],
   metrics = {}
 }) => {
-  const [activeTab, setActiveTab] = useState<'code' | 'explain' | 'test' | 'enhanced'>('enhanced');
+  const [activeTab, setActiveTab] = useState<'premium' | 'enhanced' | 'code' | 'explain' | 'test'>('premium');
   const [isLoading, setIsLoading] = useState(false);
   const [explanation, setExplanation] = useState<any>(null);
   const [testData, setTestData] = useState<any>(null);
@@ -106,6 +107,17 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
         <div className="flex items-center justify-between px-4">
           <div className="flex overflow-x-auto hide-scrollbar">
             <button
+              onClick={() => setActiveTab('premium')}
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
+                activeTab === 'premium'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Premium Analysis
+            </button>
+            <button
               onClick={() => setActiveTab('enhanced')}
               className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
                 activeTab === 'enhanced'
@@ -114,7 +126,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
               }`}
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Enhanced Analysis
+              Enhanced View
             </button>
             <button
               onClick={() => setActiveTab('code')}
@@ -160,6 +172,22 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
 
       <div className="p-6">
         <AnimatePresence mode="wait">
+          {activeTab === 'premium' && (
+            <motion.div
+              key="premium"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <PremiumCodeReview
+                code={code}
+                language={language}
+                filePath={filePath}
+              />
+            </motion.div>
+          )}
+
           {activeTab === 'enhanced' && (
             <motion.div
               key="enhanced"

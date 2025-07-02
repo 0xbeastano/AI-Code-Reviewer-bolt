@@ -8,6 +8,7 @@ import { WebSocketProvider } from './contexts/WebSocketContext';
 import { CollaborationProvider } from './contexts/CollaborationContext';
 import { AuthProvider } from './components/Auth/AuthProvider';
 import Layout from './components/Layout/Layout';
+import PremiumLayout from './components/Layout/PremiumLayout';
 import Dashboard from './pages/Dashboard';
 import CodeReview from './pages/CodeReview';
 import Analytics from './pages/Analytics';
@@ -52,42 +53,42 @@ function App() {
                         {/* Test Dashboard - Public for testing */}
                         <Route path="/test" element={<TestDashboard />} />
                         
-                        {/* Main Application Routes */}
+                        {/* Main Application Routes - Premium Design */}
                         <Route path="/dashboard" element={
-                          <Layout>
+                          <PremiumLayout>
                             <Dashboard />
-                          </Layout>
+                          </PremiumLayout>
                         } />
                         <Route path="/review" element={
-                          <Layout>
+                          <PremiumLayout>
                             <CodeReview />
-                          </Layout>
+                          </PremiumLayout>
                         } />
                         <Route path="/review/:id/results" element={
-                          <Layout>
+                          <PremiumLayout>
                             <ReviewResults />
-                          </Layout>
+                          </PremiumLayout>
                         } />
                         <Route path="/analytics" element={
-                          <Layout>
+                          <PremiumLayout>
                             <Analytics />
-                          </Layout>
+                          </PremiumLayout>
                         } />
                         <Route path="/settings" element={
-                          <Layout>
+                          <PremiumLayout>
                             <Settings />
-                          </Layout>
+                          </PremiumLayout>
                         } />
                         <Route path="/deploy" element={
-                          <Layout>
+                          <PremiumLayout>
                             <DeployPage />
-                          </Layout>
+                          </PremiumLayout>
                         } />
                         {/* Pull Request Review Route */}
                         <Route path="/pull-request/:owner/:repo" element={
-                          <Layout>
+                          <PremiumLayout>
                             <PullRequestReview />
-                          </Layout>
+                          </PremiumLayout>
                         } />
                         
                         {/* Fallback - Redirect to dashboard */}
