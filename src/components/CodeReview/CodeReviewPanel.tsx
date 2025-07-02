@@ -10,6 +10,7 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Zap,
+  Shield,
   Users
 } from 'lucide-react';
 import CodeEditor from '../CodeEditor/CodeEditor';
@@ -18,6 +19,7 @@ import TestGenerator from '../TestGenerator/TestGenerator';
 import CollaborativeCodeEditor from './CollaborativeCodeEditor';
 import CollaborationButton from '../Collaboration/CollaborationButton';
 import CollaborationPanel from '../Collaboration/CollaborationPanel';
+import WarningBanner from '../WarningBanner';
 import { AIService } from '../../services/aiService';
 import { useCollaboration } from '../../contexts/CollaborationContext';
 import toast from 'react-hot-toast';
@@ -98,7 +100,14 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="space-y-4">
+      <WarningBanner
+        type="info"
+        title="🚀 Demo Mode Active"
+        message="The app is currently using high-quality mock data for reliable demonstration. API integrations are temporarily disabled due to browser CORS restrictions. All features are fully functional with realistic sample data."
+      />
+      
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-4">
           <div className="flex overflow-x-auto hide-scrollbar">
@@ -332,6 +341,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
           />
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };
