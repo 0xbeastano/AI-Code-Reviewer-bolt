@@ -20,6 +20,7 @@ import CollaborativeCodeEditor from './CollaborativeCodeEditor';
 import CollaborationButton from '../Collaboration/CollaborationButton';
 import CollaborationPanel from '../Collaboration/CollaborationPanel';
 import WarningBanner from '../WarningBanner';
+import EnhancedCodeReview from './EnhancedCodeReview';
 import { AIService } from '../../services/aiService';
 import { useCollaboration } from '../../contexts/CollaborationContext';
 import toast from 'react-hot-toast';
@@ -41,7 +42,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
   suggestions = [],
   metrics = {}
 }) => {
-  const [activeTab, setActiveTab] = useState<'code' | 'explain' | 'test'>('code');
+  const [activeTab, setActiveTab] = useState<'code' | 'explain' | 'test' | 'enhanced'>('enhanced');
   const [isLoading, setIsLoading] = useState(false);
   const [explanation, setExplanation] = useState<any>(null);
   const [testData, setTestData] = useState<any>(null);
@@ -100,17 +101,21 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      <WarningBanner
-        type="info"
-        title="🚀 Demo Mode Active"
-        message="The app is currently using high-quality mock data for reliable demonstration. API integrations are temporarily disabled due to browser CORS restrictions. All features are fully functional with realistic sample data."
-      />
-      
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-4">
           <div className="flex overflow-x-auto hide-scrollbar">
+            <button
+              onClick={() => setActiveTab('enhanced')}
+              className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
+                activeTab === 'enhanced'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Enhanced Analysis
+            </button>
             <button
               onClick={() => setActiveTab('code')}
               className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${
@@ -120,7 +125,7 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
               }`}
             >
               <Code className="w-4 h-4 mr-2" />
-              Code
+              Legacy View
             </button>
             <button
               onClick={handleExplainCode}
@@ -155,6 +160,22 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
 
       <div className="p-6">
         <AnimatePresence mode="wait">
+          {activeTab === 'enhanced' && (
+            <motion.div
+              key="enhanced"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <EnhancedCodeReview
+                code={code}
+                language={language}
+                filePath={filePath}
+              />
+            </motion.div>
+          )}
+
           {activeTab === 'code' && (
             <motion.div
               key="code"
@@ -341,7 +362,6 @@ const CodeReviewPanel: React.FC<CodeReviewPanelProps> = ({
           />
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 };
