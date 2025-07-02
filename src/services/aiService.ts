@@ -7,7 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export class AIService {
   static instance: AIService;
   private apiUrl: string;
-  private defaultModel: string = 'gpt-4o'; // Temporarily using OpenAI as default until valid Claude API key is provided
+  private defaultModel: string = 'claude-3-haiku';
   private openai: OpenAI | null = null;
   private anthropic: Anthropic | null = null;
 
@@ -991,7 +991,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
 
   // Mock implementations for demo mode
   private getMockAnalysisResult(code: string, language: string, filePath: string, generateImprovedCode: boolean): any {
-    console.log('🔄 Using mock analysis data - Claude API not available with current configuration');
+    console.log('🔄 Using mock analysis data for demo purposes');
     
     // Generate some realistic issues based on the code
     const issues = this.generateMockIssues(code, language);
