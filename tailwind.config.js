@@ -3,7 +3,37 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'class',
   theme: {
+    screens: {
+      'xs': '320px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     extend: {
+      // Responsive spacing system
+      spacing: {
+        'fluid-xs': 'clamp(0.125rem, 0.25vw, 0.25rem)',
+        'fluid-sm': 'clamp(0.25rem, 0.5vw, 0.5rem)',
+        'fluid-md': 'clamp(0.5rem, 1vw, 1rem)',
+        'fluid-lg': 'clamp(1rem, 2vw, 2rem)',
+        'fluid-xl': 'clamp(1.5rem, 3vw, 3rem)',
+        'fluid-2xl': 'clamp(2rem, 4vw, 4rem)',
+        'fluid-3xl': 'clamp(3rem, 6vw, 6rem)',
+      },
+      // Responsive font sizes
+      fontSize: {
+        'fluid-xs': ['clamp(0.75rem, 0.875vw, 0.875rem)', { lineHeight: '1.5' }],
+        'fluid-sm': ['clamp(0.875rem, 1vw, 1rem)', { lineHeight: '1.5' }],
+        'fluid-base': ['clamp(1rem, 1.125vw, 1.125rem)', { lineHeight: '1.5' }],
+        'fluid-lg': ['clamp(1.125rem, 1.25vw, 1.25rem)', { lineHeight: '1.5' }],
+        'fluid-xl': ['clamp(1.25rem, 1.5vw, 1.5rem)', { lineHeight: '1.4' }],
+        'fluid-2xl': ['clamp(1.5rem, 2vw, 2rem)', { lineHeight: '1.3' }],
+        'fluid-3xl': ['clamp(1.875rem, 2.5vw, 2.5rem)', { lineHeight: '1.25' }],
+        'fluid-4xl': ['clamp(2.25rem, 3vw, 3rem)', { lineHeight: '1.2' }],
+        'fluid-5xl': ['clamp(3rem, 4vw, 4rem)', { lineHeight: '1.1' }],
+      },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },

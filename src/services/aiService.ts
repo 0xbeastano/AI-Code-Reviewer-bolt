@@ -3,6 +3,69 @@ import { supabase, isDemoMode } from "../lib/supabase";
 import { authService } from "../lib/auth";
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { log } from '../utils/logger';
+import type { ApiResponse, ApiError } from '../utils/types';
+
+// Types for AI service
+interface AIAnalysisResponse {
+  suggestions: CodeSuggestion[];
+  metrics: {
+    complexity: number;
+    maintainability: number;
+    performance: number;
+    security: number;
+  };
+  issues: CodeIssue[];
+  summary: string;
+  improvedCode?: string;
+}
+
+interface CodeSuggestion {
+  id: string;
+  type: 'improvement' | 'fix' | 'optimization';
+  severity: 'low' | 'medium' | 'high';
+  title: string;
+  description: string;
+  suggestedCode?: string;
+  lineNumber?: number;
+}
+
+interface CodeIssue {
+  id: string;
+  type: string;
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  line: number;
+  column?: number;
+}
+
+interface LocalCodeExplanation {
+  summary: string;
+  sections: ExplanationSection[];
+  concepts: string[];
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+}
+
+interface ExplanationSection {
+  title: string;
+  content: string;
+  code?: string;
+  lineRange?: [number, number];
+}
+
+interface LocalTestGenerationResult {
+  testCode: string;
+  framework: string;
+  coverage: number;
+  testCases: LocalTestCase[];
+}
+
+interface LocalTestCase {
+  name: string;
+  description: string;
+  type: 'unit' | 'integration' | 'e2e';
+  priority: 'high' | 'medium' | 'low';
+}
 
 export class AIService {
   static instance: AIService;
@@ -32,12 +95,12 @@ export class AIService {
           apiKey,
           dangerouslyAllowBrowser: true // Required for browser usage
         });
-        console.log('OpenAI client initialized successfully');
+        log.info('OpenAI client initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize OpenAI client:', error);
+        log.error('Failed to initialize OpenAI client:', error);
       }
     } else {
-      console.warn('OpenAI API key not found in environment variables');
+      log.warn('OpenAI API key not found in environment variables');
     }
   }
 
@@ -47,7 +110,7 @@ export class AIService {
       try {
         // Validate API key format
         if (!apiKey.startsWith('sk-ant-')) {
-          console.warn('Claude API key format invalid. Expected format: sk-ant-... Using fallback to mock data.');
+          log.warn('Claude API key format invalid. Expected format: sk-ant-... Using fallback to mock data.');
           return;
         }
         
@@ -55,13 +118,13 @@ export class AIService {
           apiKey,
           dangerouslyAllowBrowser: true // Required for browser usage
         });
-        console.log('Claude client initialized successfully');
+        log.info('Claude client initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize Claude client:', error);
-        console.warn('Claude will use fallback mode');
+        log.error('Failed to initialize Claude client:', error);
+        log.warn('Claude will use fallback mode');
       }
     } else {
-      console.warn('Claude API key not found in environment variables. Using fallback mode.');
+      log.warn('Claude API key not found in environment variables. Using fallback mode.');
     }
   }
 
@@ -71,34 +134,42 @@ export class AIService {
     filePath: string, 
     generateImprovedCode: boolean = false,
     modelId: string = this.defaultModel
-  ): Promise<any> {
+  ): Promise<ApiResponse<AIAnalysisResponse>> {
+    const startTime = performance.now();
+    
     try {
-      console.log(`Analyzing code with model: ${modelId}, file: ${filePath}`);
+      log.info(`Analyzing code with model: ${modelId}, file: ${filePath}`);
       
       // TEMPORARY: Use mock data by default to prevent errors
-      console.log('🔄 Using mock analysis data for reliable demo experience');
-      return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+      log.info('🔄 Using mock analysis data for reliable demo experience');
+      const mockData = this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+      log.performance('Code analysis (mock)', performance.now() - startTime);
+      return { data: mockData, status: 200 };
       
       // Check if using Claude model (DISABLED due to CORS issues)
       if (this.isClaudeModel(modelId)) {
-        console.warn('⚠️ Claude API has CORS restrictions in browser. Using mock data.');
-        return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+        log.warn('⚠️ Claude API has CORS restrictions in browser. Using mock data.');
+        const mockData = this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+        return { data: mockData, status: 200 };
       }
       
       // Check if using OpenAI model
       if (this.isOpenAIModel(modelId)) {
         if (this.openai) {
-          console.log('Using direct OpenAI API call');
-          return this.analyzeCodeWithOpenAI(code, language, filePath, generateImprovedCode, modelId);
+          log.info('Using direct OpenAI API call');
+          const result = await this.analyzeCodeWithOpenAI(code, language, filePath, generateImprovedCode, modelId);
+          log.performance('Code analysis (OpenAI)', performance.now() - startTime);
+          return { data: result, status: 200 };
         } else {
-          console.warn('⚠️ OpenAI client not initialized. Using mock data.');
-          return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+          log.warn('⚠️ OpenAI client not initialized. Using mock data.');
+          const mockData = this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+          return { data: mockData, status: 200 };
         }
       }
 
       // Otherwise, use Supabase Edge Function
       if (isDemoMode()) {
-        console.log('Demo mode: Attempting to use Edge Function');
+        log.info('Demo mode: Attempting to use Edge Function');
         // For demo mode, we'll still try to use the Edge Function if available
         try {
           const response = await fetch(`${this.apiUrl}/functions/v1/analyze-code`, {
@@ -119,25 +190,28 @@ export class AIService {
 
           if (response.ok) {
             const result = await response.json();
-            console.log('Edge function call successful');
-            return result;
+            log.info('Edge function call successful');
+            log.performance('Code analysis (Edge Function)', performance.now() - startTime);
+            return { data: result, status: 200 };
           } else {
-            console.error('Edge function returned error:', await response.text());
+            const errorText = await response.text();
+            log.error('Edge function returned error:', errorText);
             throw new Error('Edge function call failed');
           }
         } catch (error) {
-          console.error('Edge function call failed, falling back to mock data:', error);
+          log.error('Edge function call failed, falling back to mock data:', error);
         }
         
         // If edge function fails or is not available, use mock data
-        console.log('Using mock analysis data');
-        return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+        log.info('Using mock analysis data');
+        const mockData = this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+        return { data: mockData, status: 200 };
       }
 
       const user = authService.getCurrentUser();
       const userId = user?.id || 'anonymous';
 
-      console.log('Using Supabase Edge Function with user:', userId);
+      log.info('Using Supabase Edge Function with user:', userId);
       // Call Supabase Edge Function
       const response = await fetch(`${this.apiUrl}/functions/v1/analyze-code`, {
         method: 'POST',
@@ -157,16 +231,23 @@ export class AIService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`API request failed with status ${response.status}:`, errorText);
+        log.error(`API request failed with status ${response.status}:`, errorText);
         throw new Error(`API request failed with status ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      return result;
+      log.performance('Code analysis (Supabase Edge Function)', performance.now() - startTime);
+      return { data: result, status: 200 };
     } catch (error) {
-      console.error('Code analysis failed:', error);
-      console.log('Falling back to mock analysis data');
-      return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+      log.error('Code analysis failed:', error);
+      log.info('Falling back to mock analysis data');
+      const mockData = this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
+      log.performance('Code analysis (error fallback)', performance.now() - startTime);
+      return { 
+        data: mockData, 
+        status: 500, 
+        error: 'Analysis failed, using fallback data' 
+      };
     }
   }
 
@@ -176,12 +257,12 @@ export class AIService {
     filePath: string,
     generateImprovedCode: boolean = false,
     modelId: string = this.defaultModel
-  ): Promise<any> {
+  ): Promise<AIAnalysisResponse> {
     if (!this.openai) {
       throw new Error('OpenAI client not initialized');
     }
 
-    console.log(`Analyzing with OpenAI model: ${modelId}`);
+    log.info(`Analyzing with OpenAI model: ${modelId}`);
     const prompt = `
 You are an expert code reviewer and software engineer with deep expertise in ${language}. Analyze this code file (${filePath}) and provide comprehensive feedback.
 
@@ -246,7 +327,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
 `;
 
     try {
-      console.log('Sending request to OpenAI API');
+      log.info('Sending request to OpenAI API');
       const response = await this.openai.chat.completions.create({
         model: modelId === "gpt-4o" ? "gpt-4" : modelId,
         messages: [
@@ -268,24 +349,24 @@ For suggestions, make sure to include actual code snippets from the file in the 
         throw new Error(`No response from OpenAI`);
       }
 
-      console.log('Received response from OpenAI');
+      log.info('Received response from OpenAI');
       // Extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.error('Could not parse JSON from OpenAI response:', content);
+        log.error('Could not parse JSON from OpenAI response:', content);
         throw new Error(`Could not parse JSON from OpenAI response`);
       }
 
       try {
         const parsedResult = JSON.parse(jsonMatch[0]);
-        console.log('Successfully parsed JSON response');
+        log.info('Successfully parsed JSON response');
         return parsedResult;
       } catch (parseError) {
-        console.error('JSON parse error:', parseError, 'Content:', jsonMatch[0]);
+        log.error('JSON parse error:', parseError, 'Content:', jsonMatch[0]);
         throw new Error(`Failed to parse JSON: ${parseError.message}`);
       }
     } catch (error) {
-      console.error('OpenAI API call failed:', error);
+      log.error('OpenAI API call failed:', error);
       throw error;
     }
   }
@@ -298,12 +379,12 @@ For suggestions, make sure to include actual code snippets from the file in the 
   ): Promise<CodeExplanation> {
     try {
       // TEMPORARY: Use mock data by default to prevent errors
-      console.log('🔄 Using mock explanation data for reliable demo experience');
+      log.info('🔄 Using mock explanation data for reliable demo experience');
       return this.getMockExplanation(code, language);
       
       // Check if using Claude model (DISABLED due to CORS issues)
       if (this.isClaudeModel(modelId)) {
-        console.warn('⚠️ Claude API has CORS restrictions in browser. Using mock data.');
+        log.warn('⚠️ Claude API has CORS restrictions in browser. Using mock data.');
         return this.getMockExplanation(code, language);
       }
       
@@ -312,7 +393,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
         if (this.openai) {
           return this.explainCodeWithOpenAI(code, language, modelId);
         } else {
-          console.warn('⚠️ OpenAI client not initialized. Using mock data.');
+          log.warn('⚠️ OpenAI client not initialized. Using mock data.');
           return this.getMockExplanation(code, language);
         }
       }
@@ -339,7 +420,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
             return await response.json();
           }
         } catch (error) {
-          console.error('Edge function call failed, falling back to mock data:', error);
+          log.error('Edge function call failed, falling back to mock data:', error);
         }
         
         return this.getMockExplanation(code, language);
@@ -370,7 +451,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Code explanation failed:', error);
+      log.error('Code explanation failed:', error);
       return this.getMockExplanation(code, language);
     }
   }
@@ -432,7 +513,7 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
 
       return JSON.parse(jsonMatch[0]);
     } catch (error) {
-      console.error('OpenAI API call failed:', error);
+      log.error('OpenAI API call failed:', error);
       throw error;
     }
   }
@@ -443,7 +524,7 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
     modelId: string = this.defaultModel
   ): Promise<CodeExplanation> {
     if (!this.anthropic) {
-      console.warn('Claude client not initialized, falling back to mock data');
+      log.warn('Claude client not initialized, falling back to mock data');
       return this.getMockExplanation(code, language);
     }
 
@@ -492,8 +573,8 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
 
       return JSON.parse(jsonMatch[0]);
     } catch (error) {
-      console.error('Claude API call failed:', error);
-      console.warn('Falling back to mock explanation data due to Claude API failure');
+      log.error('Claude API call failed:', error);
+      log.warn('Falling back to mock explanation data due to Claude API failure');
       return this.getMockExplanation(code, language);
     }
   }
@@ -506,12 +587,12 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
   ): Promise<TestGenerationResult> {
     try {
       // TEMPORARY: Use mock data by default to prevent errors
-      console.log('🔄 Using mock test generation data for reliable demo experience');
+      log.info('🔄 Using mock test generation data for reliable demo experience');
       return this.getMockTestGeneration(code, language);
       
       // Check if using Claude model (DISABLED due to CORS issues)
       if (this.isClaudeModel(modelId)) {
-        console.warn('⚠️ Claude API has CORS restrictions in browser. Using mock data.');
+        log.warn('⚠️ Claude API has CORS restrictions in browser. Using mock data.');
         return this.getMockTestGeneration(code, language);
       }
       
@@ -520,7 +601,7 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
         if (this.openai) {
           return this.generateTestsWithOpenAI(code, language, filePath, modelId);
         } else {
-          console.warn('⚠️ OpenAI client not initialized. Using mock data.');
+          log.warn('⚠️ OpenAI client not initialized. Using mock data.');
           return this.getMockTestGeneration(code, language);
         }
       }
@@ -548,7 +629,7 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
             return await response.json();
           }
         } catch (error) {
-          console.error('Edge function call failed, falling back to mock data:', error);
+          log.error('Edge function call failed, falling back to mock data:', error);
         }
         
         return this.getMockTestGeneration(code, language);
@@ -580,7 +661,7 @@ Be thorough but concise. Focus on helping a developer understand the code's purp
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Test generation failed:', error);
+      log.error('Test generation failed:', error);
       return this.getMockTestGeneration(code, language);
     }
   }
@@ -658,7 +739,7 @@ For other languages, use the most appropriate testing framework.
 
       return JSON.parse(jsonMatch[0]);
     } catch (error) {
-      console.error('OpenAI API call failed:', error);
+      log.error('OpenAI API call failed:', error);
       throw error;
     }
   }
@@ -670,7 +751,7 @@ For other languages, use the most appropriate testing framework.
     modelId: string = this.defaultModel
   ): Promise<TestGenerationResult> {
     if (!this.anthropic) {
-      console.warn('Claude client not initialized, falling back to mock data');
+      log.warn('Claude client not initialized, falling back to mock data');
       return this.getMockTestGeneration(code, language);
     }
 
@@ -734,8 +815,8 @@ For other languages, use the most appropriate testing framework.
 
       return JSON.parse(jsonMatch[0]);
     } catch (error) {
-      console.error('Claude API call failed:', error);
-      console.warn('Falling back to mock test generation data due to Claude API failure');
+      log.error('Claude API call failed:', error);
+      log.warn('Falling back to mock test generation data due to Claude API failure');
       return this.getMockTestGeneration(code, language);
     }
   }
@@ -747,12 +828,12 @@ For other languages, use the most appropriate testing framework.
   ): Promise<string> {
     try {
       // TEMPORARY: Use mock data by default to prevent errors
-      console.log('🔄 Using mock documentation data for reliable demo experience');
+      log.info('🔄 Using mock documentation data for reliable demo experience');
       return this.getMockDocumentation(code, language);
       
       // Check if using Claude model (DISABLED due to CORS issues)
       if (this.isClaudeModel(modelId)) {
-        console.warn('⚠️ Claude API has CORS restrictions in browser. Using mock data.');
+        log.warn('⚠️ Claude API has CORS restrictions in browser. Using mock data.');
         return this.getMockDocumentation(code, language);
       }
       
@@ -761,7 +842,7 @@ For other languages, use the most appropriate testing framework.
         if (this.openai) {
           return this.generateDocumentationWithOpenAI(code, language, modelId);
         } else {
-          console.warn('⚠️ OpenAI client not initialized. Using mock data.');
+          log.warn('⚠️ OpenAI client not initialized. Using mock data.');
           return this.getMockDocumentation(code, language);
         }
       }
@@ -769,7 +850,7 @@ For other languages, use the most appropriate testing framework.
       // Otherwise, use mock data
       return this.getMockDocumentation(code, language);
     } catch (error) {
-      console.error('Documentation generation failed:', error);
+      log.error('Documentation generation failed:', error);
       return this.getMockDocumentation(code, language);
     }
   }
@@ -824,7 +905,7 @@ Use the appropriate documentation format for ${language} (JSDoc for JavaScript, 
 
       return content;
     } catch (error) {
-      console.error('OpenAI API call failed:', error);
+      log.error('OpenAI API call failed:', error);
       throw error;
     }
   }
@@ -835,7 +916,7 @@ Use the appropriate documentation format for ${language} (JSDoc for JavaScript, 
     modelId: string = this.defaultModel
   ): Promise<string> {
     if (!this.anthropic) {
-      console.warn('Claude client not initialized, falling back to mock data');
+      log.warn('Claude client not initialized, falling back to mock data');
       return this.getMockDocumentation(code, language);
     }
 
@@ -877,8 +958,8 @@ Use the appropriate documentation format for ${language} (JSDoc for JavaScript, 
 
       return content.text;
     } catch (error) {
-      console.error('Claude API call failed:', error);
-      console.warn('Falling back to mock documentation data due to Claude API failure');
+      log.error('Claude API call failed:', error);
+      log.warn('Falling back to mock documentation data due to Claude API failure');
       return this.getMockDocumentation(code, language);
     }
   }
@@ -901,11 +982,11 @@ Use the appropriate documentation format for ${language} (JSDoc for JavaScript, 
     modelId: string = this.defaultModel
   ): Promise<any> {
     if (!this.anthropic) {
-      console.warn('Claude client not initialized, falling back to mock data');
+      log.warn('Claude client not initialized, falling back to mock data');
       return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
     }
 
-    console.log(`Analyzing with Claude model: ${modelId}`);
+    log.info(`Analyzing with Claude model: ${modelId}`);
     const prompt = `
 You are an expert code reviewer and software engineer with deep expertise in ${language}. Analyze this code file (${filePath}) and provide comprehensive feedback.
 
@@ -970,7 +1051,7 @@ For suggestions, make sure to include actual code snippets from the file in the 
 `;
 
     try {
-      console.log('Sending request to Claude API');
+      log.info('Sending request to Claude API');
       const response = await this.anthropic.messages.create({
         model: modelId,
         max_tokens: 4000,
@@ -989,32 +1070,32 @@ For suggestions, make sure to include actual code snippets from the file in the 
         throw new Error(`No valid response from Claude`);
       }
 
-      console.log('Received response from Claude');
+      log.info('Received response from Claude');
       // Extract JSON from response
       const jsonMatch = content.text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.error('Could not parse JSON from Claude response:', content.text);
+        log.error('Could not parse JSON from Claude response:', content.text);
         throw new Error(`Could not parse JSON from Claude response`);
       }
 
       try {
         const parsedResult = JSON.parse(jsonMatch[0]);
-        console.log('Successfully parsed JSON response');
+        log.info('Successfully parsed JSON response');
         return parsedResult;
       } catch (parseError) {
-        console.error('JSON parse error:', parseError, 'Content:', jsonMatch[0]);
+        log.error('JSON parse error:', parseError, 'Content:', jsonMatch[0]);
         throw new Error(`Failed to parse JSON: ${parseError.message}`);
       }
     } catch (error) {
-      console.error('Claude API call failed:', error);
-      console.warn('Falling back to mock analysis data due to Claude API failure');
+      log.error('Claude API call failed:', error);
+      log.warn('Falling back to mock analysis data due to Claude API failure');
       return this.getMockAnalysisResult(code, language, filePath, generateImprovedCode);
     }
   }
 
   // Mock implementations for demo mode
   private getMockAnalysisResult(code: string, language: string, filePath: string, generateImprovedCode: boolean): any {
-    console.log('🔄 Using mock analysis data for demo purposes');
+    log.info('🔄 Using mock analysis data for demo purposes');
     
     // Generate some realistic issues based on the code
     const issues = this.generateMockIssues(code, language);
