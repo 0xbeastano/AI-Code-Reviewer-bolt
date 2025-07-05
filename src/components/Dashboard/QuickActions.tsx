@@ -2,16 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Play, Plus, Settings, Download, GitBranch, Zap, ChevronRight, Cloud } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-interface Repository {
-  id: string;
-  name: string;
-  provider: string;
-  language: string;
-  isPrivate: boolean;
-  lastScan: Date;
-  status: 'active' | 'syncing' | 'error' | 'disconnected';
-}
+import { Repository } from '../../types/codeReview';
 
 interface QuickActionsProps {
   repositories: Repository[];
@@ -141,8 +132,11 @@ const QuickActions: React.FC<QuickActionsProps> = ({ repositories = [] }) => {
                     {repo.name}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {repo.language} • {repo.provider}
+                    {repo.language} • {repo.provider} • {repo.status}
                   </p>
+                </div>
+                <div className="text-xs text-gray-400">
+                  {new Date(repo.lastSync).toLocaleDateString()}
                 </div>
               </motion.button>
             ))}
