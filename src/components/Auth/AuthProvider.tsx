@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, isDemoMode } from '../../lib/supabase';
+import { supabase, isDemoMode, profiles, Profile } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
@@ -26,6 +27,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -203,9 +205,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Fetch profile when user changes
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user && !isDemoMode() && supabase) {
+        try {
+          const userProfile = await profiles.getProfile(user.id);
+          setProfile(userProfile);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+          setProfile(null);
+        }
+      } else {
+        setProfile(null);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
   const value = {
     user,
     session,
+    profile,
     loading,
     signIn,
     signUp,

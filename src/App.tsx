@@ -19,6 +19,9 @@ import DocumentationPage from './pages/DocumentationPage';
 import ReviewResults from './pages/ReviewResults';
 import DeployPage from './pages/DeployPage';
 import PullRequestReview from './pages/PullRequestReview';
+import AuthPage from './components/Auth/AuthPage';
+import AuthCallback from './components/Auth/AuthCallback';
+import GitHubRepositoryImporter from './components/GitHub/GitHubRepositoryImporter';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -47,6 +50,19 @@ function App() {
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/pricing" element={<PricingPage />} />
                         <Route path="/docs" element={<DocumentationPage />} />
+                        
+                        {/* Authentication Routes */}
+                        <Route path="/auth" element={<AuthPage />} />
+                        <Route path="/auth/signin" element={<AuthPage mode="signin" />} />
+                        <Route path="/auth/signup" element={<AuthPage mode="signup" />} />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
+                        
+                        {/* GitHub Integration Routes */}
+                        <Route path="/github/import" element={
+                          <PremiumLayout>
+                            <GitHubRepositoryImporter />
+                          </PremiumLayout>
+                        } />
                         
                         {/* Test Dashboard - Public for testing */}
                         <Route path="/test" element={<TestDashboard />} />
