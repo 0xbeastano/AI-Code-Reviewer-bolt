@@ -21,7 +21,7 @@ export default defineConfig({
   build: {
     target: 'esnext',
     sourcemap: true,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 3000, // Increased for large editor bundle
     rollupOptions: {
       output: {
         manualChunks: {

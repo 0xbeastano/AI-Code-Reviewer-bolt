@@ -1,5 +1,5 @@
 import { createClient, User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { supabase, isDemoMode, disableDemoMode } from './supabase';
+import { supabase, isDemoMode } from './supabase';
 
 export interface User {
   id: string;
@@ -44,8 +44,6 @@ export class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         this.session = await this.createAuthSession(session);
-        // If we have a valid session, disable demo mode
-        disableDemoMode();
       }
     } else if (isDemoMode()) {
       // Create a demo session if in demo mode
