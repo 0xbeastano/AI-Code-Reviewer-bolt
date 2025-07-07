@@ -121,12 +121,25 @@ export interface CodeReview {
   updated_at: string;
 }
 
+// Utility to safely retrieve the Supabase client after runtime checks
+const getSupabase = () => {
+  if (!supabase) {
+    throw new Error('Supabase client is not initialised. Ensure environment variables are set.');
+  }
+  return supabase;
+};
+
 // Authentication helpers
 export const auth = {
   // Sign up with email
   signUp: async (email: string, password: string, metadata?: any) => {
+    if (isDemoMode()) {
+      log.info('🔄 Demo mode: Sign-up simulated');
+      return { user: null, session: null } as any;
+    }
+    const client = getSupabase();
     log.info('Signing up user with email');
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await client.auth.signUp({
       email,
       password,
       options: {
