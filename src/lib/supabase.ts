@@ -157,8 +157,13 @@ export const auth = {
 
   // Sign in with email
   signIn: async (email: string, password: string) => {
+    if (isDemoMode()) {
+      log.info('🔄 Demo mode: Sign-in simulated');
+      return { user: null, session: null } as any;
+    }
+    const client = getSupabase();
     log.info('Signing in user with email');
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await client.auth.signInWithPassword({
       email,
       password
     });
@@ -173,9 +178,13 @@ export const auth = {
 
   // Sign in with OAuth provider
   signInWithOAuth: async (provider: 'github' | 'google') => {
+    if (isDemoMode()) {
+      log.info('🔄 Demo mode: OAuth sign-in simulated');
+      return { url: '#' } as any;
+    }
+    const client = getSupabase();
     log.info(`Signing in with ${provider}`);
-    
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await client.auth.signInWithOAuth({
       provider,
       options: oauthProviders[provider]
     });
@@ -190,8 +199,10 @@ export const auth = {
 
   // Sign out
   signOut: async () => {
+    if (isDemoMode()) return;
+    const client = getSupabase();
     log.info('Signing out user');
-    const { error } = await supabase.auth.signOut();
+    const { error } = await client.auth.signOut();
     
     if (error) {
       log.error('Signout error', error);
@@ -201,7 +212,9 @@ export const auth = {
 
   // Get current session
   getSession: async () => {
-    const { data, error } = await supabase.auth.getSession();
+    if (isDemoMode()) return null;
+    const client = getSupabase();
+    const { data, error } = await client.auth.getSession();
     
     if (error) {
       log.error('Get session error', error);
@@ -213,7 +226,9 @@ export const auth = {
 
   // Get current user
   getUser: async () => {
-    const { data, error } = await supabase.auth.getUser();
+    if (isDemoMode()) return null;
+    const client = getSupabase();
+    const { data, error } = await client.auth.getUser();
     
     if (error) {
       log.error('Get user error', error);
@@ -225,8 +240,10 @@ export const auth = {
 
   // Reset password
   resetPassword: async (email: string) => {
+    if (isDemoMode()) return { data: null } as any;
+    const client = getSupabase();
     log.info('Sending password reset email');
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { data, error } = await client.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/reset-password`
     });
     
@@ -240,8 +257,10 @@ export const auth = {
 
   // Update password
   updatePassword: async (password: string) => {
+    if (isDemoMode()) return { data: null } as any;
+    const client = getSupabase();
     log.info('Updating user password');
-    const { data, error } = await supabase.auth.updateUser({
+    const { data, error } = await client.auth.updateUser({
       password
     });
     
@@ -258,7 +277,9 @@ export const auth = {
 export const repositories = {
   // Get user repositories
   getUserRepositories: async (userId: string) => {
-    const { data, error } = await supabase
+    if (isDemoMode()) return [] as Repository[];
+    const client = getSupabase();
+    const { data, error } = await client
       .from('repositories')
       .select('*')
       .eq('user_id', userId)
@@ -274,7 +295,9 @@ export const repositories = {
 
   // Create repository
   createRepository: async (repository: Omit<Repository, 'id' | 'created_at' | 'updated_at'>) => {
-    const { data, error } = await supabase
+    if (isDemoMode()) return { ...repository, id: 'demo', created_at: '', updated_at: '' } as Repository;
+    const client = getSupabase();
+    const { data, error } = await client
       .from('repositories')
       .insert(repository)
       .select()
@@ -290,7 +313,9 @@ export const repositories = {
 
   // Update repository
   updateRepository: async (id: string, updates: Partial<Repository>) => {
-    const { data, error } = await supabase
+    if (isDemoMode()) return { id, ...updates } as any;
+    const client = getSupabase();
+    const { data, error } = await client
       .from('repositories')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -307,7 +332,9 @@ export const repositories = {
 
   // Delete repository
   deleteRepository: async (id: string) => {
-    const { error } = await supabase
+    if (isDemoMode()) return;
+    const client = getSupabase();
+    const { error } = await client
       .from('repositories')
       .delete()
       .eq('id', id);
@@ -323,7 +350,9 @@ export const repositories = {
 export const profiles = {
   // Get user profile
   getProfile: async (userId: string) => {
-    const { data, error } = await supabase
+    if (isDemoMode()) return null;
+    const client = getSupabase();
+    const { data, error } = await client
       .from('profiles')
       .select('*')
       .eq('id', userId)
@@ -339,7 +368,9 @@ export const profiles = {
 
   // Create or update profile
   upsertProfile: async (profile: Omit<Profile, 'created_at' | 'updated_at'>) => {
-    const { data, error } = await supabase
+    if (isDemoMode()) return profile as any;
+    const client = getSupabase();
+    const { data, error } = await client
       .from('profiles')
       .upsert({
         ...profile,
@@ -357,7 +388,8 @@ export const profiles = {
   }
 };
 
-// Export types for use in other files
+// Export helpers & types for use in other files
+export { getSupabase };
 export type { Repository as SupabaseRepository, CodeReview as SupabaseCodeReview };
 
 export default supabase;
