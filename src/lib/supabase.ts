@@ -5,25 +5,46 @@ import { log } from '../utils/logger';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  log.error('Missing Supabase configuration');
-  throw new Error('Missing Supabase environment variables');
-}
+// Determine if we should run in demo/offline mode
+export const isDemoMode = (): boolean => {
+  return (
+    !supabaseUrl ||
+    !supabaseAnonKey ||
+    import.meta.env.VITE_DEMO_MODE === 'true'
+  );
+};
 
-// Create Supabase client with enhanced configuration
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce'
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  }
-});
+// Lazily create the Supabase client only when we have the required env vars
+export const supabase = !isDemoMode()
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    })
+  : ((): null => {
+      // Log once to avoid noisy console output in components that re-import this file
+      if (typeof window !== 'undefined') {
+        log.warn(
+          'Supabase environment variables are missing. Falling back to demo mode.'
+        );
+      }
+      return null;
+    })();
+
+// Warn developers in development mode when demo mode is active
+if (import.meta.env.DEV && isDemoMode()) {
+  console.info(
+    '\u26A0\uFE0F  Supabase is not configured. The application is running in demo mode.'
+  );
+}
 
 // OAuth providers configuration
 export const oauthProviders = {
@@ -321,12 +342,6 @@ export const profiles = {
     
     return data as Profile;
   }
-};
-
-// Utility function to check if we're in demo mode
-export const isDemoMode = () => {
-  return !supabaseUrl || supabaseUrl.includes('demo') || 
-         import.meta.env.VITE_DEMO_MODE === 'true';
 };
 
 // Export types for use in other files
