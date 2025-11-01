@@ -391,29 +391,6 @@ export class AuthService {
       return { error: { message: 'An unexpected error occurred' } };
     }
   }
-
-  // Callback handlers
-  async handleGitHubCallback(code: string, state: string): Promise<{ error?: any }> {
-    if (isDemoMode()) {
-      // Simulate successful callback in demo mode
-      this.createDemoSession();
-      return { error: undefined };
-    }
-
-    // In a real implementation, this would validate the state and exchange the code for a token
-    return { error: { message: 'Direct OAuth flow not implemented' } };
-  }
-
-  async handleGoogleCallback(code: string, state: string): Promise<{ error?: any }> {
-    if (isDemoMode()) {
-      // Simulate successful callback in demo mode
-      this.createDemoSession();
-      return { error: undefined };
-    }
-
-    // In a real implementation, this would validate the state and exchange the code for a token
-    return { error: { message: 'Direct OAuth flow not implemented' } };
-  }
 }
 
 export const authService = AuthService.getInstance();
