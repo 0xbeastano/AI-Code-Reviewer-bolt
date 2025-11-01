@@ -205,12 +205,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (isDemoMode()) {
       // Simulate successful GitHub sign-in in demo mode
       setUser(demoUser);
-      return { error: undefined };
+      return { error: null };
     }
 
     if (!supabase) {
       toast.error('Authentication service not available');
-      return { error: new AuthError('Supabase client not initialized') };
+      return { error: null };
     }
 
     try {
@@ -220,19 +220,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
-      
+
       if (error) {
+        toast.error('Failed to redirect to GitHub. Please try again.');
         return { error };
       }
-      
+
       if (data.url) {
-        window.location.href = data.url;
+        try {
+          window.location.href = data.url;
+        } catch (redirectError) {
+          console.error('Redirect error:', redirectError);
+          toast.error('Failed to redirect to GitHub provider. Please try again.');
+          return { error: null };
+        }
       }
-      
-      return { error: undefined };
+
+      return { error: null };
     } catch (error) {
       console.error('GitHub sign in error:', error);
-      return { error: new AuthError('An unexpected error occurred') };
+      toast.error('Failed to sign in with GitHub. Please try again.');
+      return { error: null };
     }
   };
 
