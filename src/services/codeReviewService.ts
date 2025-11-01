@@ -447,8 +447,35 @@ class CodeReviewService {
         return data.id;
       });
 
-      const reviewIds = await Promise.all(reviewPromises);
-      return reviewIds[0]; // Return the first review ID as the main one
+      try {
+        const reviewIds = await Promise.all(reviewPromises);
+        return reviewIds[0]; // Return the first review ID as the main one
+      } catch (batchError) {
+        // Log batch operation error with context
+        console.error('Batch review creation failed:', {
+          totalFiles: codebase.files.length,
+          error: batchError,
+          message: batchError instanceof Error ? batchError.message : 'Unknown error'
+        });
+
+        // Try to mark any failed reviews with error status
+        if (supabase && user) {
+          try {
+            const failedFilesPaths = codebase.files.map(f => f.path);
+            await supabase
+              .from('code_reviews')
+              .update({ status: 'failed' })
+              .eq('user_id', user.id)
+              .in('file_path', failedFilesPaths)
+              .eq('status', 'pending');
+          } catch (updateError) {
+            console.error('Failed to update review status to failed:', updateError);
+          }
+        }
+
+        // Re-throw error with context
+        throw new Error(`Code review batch creation failed: ${batchError instanceof Error ? batchError.message : 'Unknown error'}`);
+      }
     } catch (error) {
       console.error('Error initiating code review:', error);
       // Return a mock review ID if there's an error
