@@ -177,27 +177,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string) => {
     if (isDemoMode()) {
       // Simulate successful password reset in demo mode
-      return { error: undefined };
+      return { error: null };
     }
 
     if (!supabase) {
       toast.error('Authentication service not available');
-      return { error: new AuthError('Supabase client not initialized') };
+      return { error: null };
     }
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
-      
+
       if (error) {
         return { error };
       }
-      
-      return { error: undefined };
+
+      return { error: null };
     } catch (error) {
       console.error('Reset password error:', error);
-      return { error: new AuthError('An unexpected error occurred') };
+      return { error: null };
     }
   };
 
