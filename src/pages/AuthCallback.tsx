@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { supabase, isDemoMode } from '../lib/supabase';
@@ -8,52 +8,52 @@ export const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        if (isDemoMode()) {
-          // In demo mode, simulate successful authentication
-          toast.success('Successfully signed in with demo account!');
-          const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
-          sessionStorage.removeItem('auth_return_to');
-          navigate(returnTo);
-          return;
-        }
+  const handleAuthCallback = useCallback(async () => {
+    try {
+      if (isDemoMode()) {
+        // In demo mode, simulate successful authentication
+        toast.success('Successfully signed in with demo account!');
+        const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
+        sessionStorage.removeItem('auth_return_to');
+        navigate(returnTo);
+        return;
+      }
 
-        if (!supabase) {
-          toast.error('Authentication service not available');
-          navigate('/auth');
-          return;
-        }
+      if (!supabase) {
+        toast.error('Authentication service not available');
+        navigate('/auth');
+        return;
+      }
 
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Auth callback error:', error);
-          toast.error('Authentication failed. Please try again.');
-          navigate('/auth');
-          return;
-        }
+      const { data, error } = await supabase.auth.getSession();
 
-        if (data.session) {
-          toast.success('Successfully signed in!');
-          
-          // Redirect to the intended page or dashboard
-          const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
-          sessionStorage.removeItem('auth_return_to');
-          navigate(returnTo);
-        } else {
-          navigate('/auth');
-        }
-      } catch (error) {
-        console.error('Unexpected error during auth callback:', error);
-        toast.error('An unexpected error occurred');
+      if (error) {
+        console.error('Auth callback error:', error);
+        toast.error('Authentication failed. Please try again.');
+        navigate('/auth');
+        return;
+      }
+
+      if (data.session) {
+        toast.success('Successfully signed in!');
+
+        // Redirect to the intended page or dashboard
+        const returnTo = sessionStorage.getItem('auth_return_to') || '/dashboard';
+        sessionStorage.removeItem('auth_return_to');
+        navigate(returnTo);
+      } else {
         navigate('/auth');
       }
-    };
+    } catch (error) {
+      console.error('Unexpected error during auth callback:', error);
+      toast.error('An unexpected error occurred');
+      navigate('/auth');
+    }
+  }, [navigate]);
 
+  useEffect(() => {
     handleAuthCallback();
-  }, [navigate, searchParams]);
+  }, [handleAuthCallback]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
