@@ -97,12 +97,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (isDemoMode()) {
       // Simulate successful sign-in in demo mode
       setUser(demoUser);
-      return { error: undefined };
+      return { error: null };
     }
 
     if (!supabase) {
       toast.error('Authentication service not available');
-      return { error: new AuthError('Supabase client not initialized') };
+      return { error: null };
     }
 
     try {
@@ -110,15 +110,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email,
         password,
       });
-      
+
       if (error) {
         return { error };
       }
-      
-      return { error: undefined };
+
+      return { error: null };
     } catch (error) {
       console.error('Sign in error:', error);
-      return { error: new AuthError('An unexpected error occurred') };
+      return { error: null };
     }
   };
 
