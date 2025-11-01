@@ -52,11 +52,11 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       const { error } = await signUp(data.email, data.password);
       
       if (error) {
-        if (error.message.includes('verification link')) {
+        if (error?.message?.includes('verification link')) {
           setEmailSent(true);
           toast.success('Verification email sent! Please check your inbox.');
         } else {
-          toast.error(error.message);
+          toast.error(error?.message || 'Sign up failed');
         }
       } else {
         toast.success('Account created successfully!');
