@@ -7,12 +7,12 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error?: AuthError }>;
-  signUp: (email: string, password: string) => Promise<{ error?: AuthError }>;
+  signIn: (email: string, password: string) => Promise<{ error?: AuthError | null }>;
+  signUp: (email: string, password: string) => Promise<{ error?: AuthError | null }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error?: AuthError }>;
-  signInWithGitHub: () => Promise<{ error?: AuthError }>;
-  signInWithGoogle: () => Promise<{ error?: AuthError }>;
+  resetPassword: (email: string) => Promise<{ error?: AuthError | null }>;
+  signInWithGitHub: () => Promise<{ error?: AuthError | null }>;
+  signInWithGoogle: () => Promise<{ error?: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
