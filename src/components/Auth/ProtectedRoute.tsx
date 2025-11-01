@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { Loader2 } from 'lucide-react';
@@ -9,12 +9,19 @@ interface ProtectedRouteProps {
   requireAuth?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requireAuth = true 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requireAuth = true
 }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    // Store return URL before redirecting to auth (in case OAuth is used)
+    if (requireAuth && !user && location.pathname !== '/auth') {
+      sessionStorage.setItem('auth_return_to', location.pathname);
+    }
+  }, [requireAuth, user, location.pathname]);
 
   if (loading) {
     return (
