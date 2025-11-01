@@ -57,9 +57,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
     setOauthLoading('github');
     try {
       const { error } = await signInWithGitHub();
-      
+
       if (error) {
-        toast.error(error.message);
+        toast.error(error?.message || 'GitHub sign in failed');
       }
       // Redirect is handled in the signInWithGitHub function
     } catch (error) {
