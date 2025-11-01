@@ -73,9 +73,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
     setOauthLoading('google');
     try {
       const { error } = await signInWithGoogle();
-      
+
       if (error) {
-        toast.error(error.message);
+        toast.error(error?.message || 'Google sign in failed');
       }
       // Redirect is handled in the signInWithGoogle function
     } catch (error) {
