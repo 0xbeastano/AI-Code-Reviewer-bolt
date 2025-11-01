@@ -39,9 +39,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSwitch
     setIsLoading(true);
     try {
       const { error } = await signIn(data.email, data.password);
-      
+
       if (error) {
-        toast.error(error.message);
+        toast.error(error?.message || 'Sign in failed');
       } else {
         toast.success('Welcome back!');
         navigate('/dashboard');
